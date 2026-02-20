@@ -4,7 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
+/* eslint-disable @next/next/no-img-element */
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +33,7 @@ export default function LoginPage() {
     if (result?.error) {
       toast.error("Invalid email or password");
     } else {
-      toast.success("Welcome back!");
+      toast.success("Success", { duration: 1500 });
       router.push("/");
       router.refresh();
     }
@@ -42,9 +42,8 @@ export default function LoginPage() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <Link href="/" className="flex items-center justify-center gap-2 mb-2">
-          <ShoppingCart className="h-6 w-6 text-primary" />
-          <span className="font-bold text-xl">MaDe Market</span>
+        <Link href="/" className="flex items-center justify-center mb-2">
+          <img src="/logo.png" alt="MaDe Market" className="h-10 w-auto" />
         </Link>
         <CardTitle className="text-2xl">Welcome back</CardTitle>
         <CardDescription>Sign in to your account</CardDescription>

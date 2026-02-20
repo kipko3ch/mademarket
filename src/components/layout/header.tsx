@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { ShoppingCart, Menu, Search, LogOut, LayoutDashboard, Shield } from "lucide-react";
+import { Menu, LogOut, LayoutDashboard, Shield } from "lucide-react";
+/* eslint-disable @next/next/no-img-element */
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,21 +27,20 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4 mx-auto max-w-7xl">
+    <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b border-border/40 transition-all duration-300">
+      <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-          <ShoppingCart className="h-6 w-6 text-primary" />
-          <span>MaDe Market</span>
+        <Link href="/" className="flex items-center shrink-0">
+          <img src="/logo.png" alt="MaDe Market" className="h-8 w-auto dark:brightness-0 dark:invert" />
         </Link>
 
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-6">
+        {/* Desktop Nav — center */}
+        <nav className="hidden md:flex items-center gap-1 ml-10">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors hover:text-foreground hover:bg-muted/50"
             >
               {link.label}
             </Link>
@@ -48,61 +48,59 @@ export function Header() {
         </nav>
 
         {/* Right side */}
-        <div className="flex items-center gap-3">
-          <Link href="/products">
-            <Button variant="ghost" size="icon" className="hidden md:flex">
-              <Search className="h-4 w-4" />
-            </Button>
-          </Link>
-
+        <div className="flex items-center gap-3 ml-auto">
           {session?.user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full ring-1 ring-border/50 hover:ring-border transition-all">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={session.user.image || ""} alt={session.user.name} />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
                       {session.user.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">{session.user.name}</p>
+              <DropdownMenuContent align="end" className="w-56 rounded-2xl shadow-xl border-border/50 p-2">
+                <div className="px-2 py-2 mb-1">
+                  <p className="text-sm font-semibold text-foreground">{session.user.name}</p>
                   <p className="text-xs text-muted-foreground">{session.user.email}</p>
                 </div>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-border/50" />
                 {(session.user.role === "vendor" || session.user.role === "admin") && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard">
+                  <DropdownMenuItem asChild className="rounded-xl mt-1">
+                    <Link href="/dashboard" className="cursor-pointer">
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
                 )}
                 {session.user.role === "admin" && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin">
+                  <DropdownMenuItem asChild className="rounded-xl">
+                    <Link href="/admin" className="cursor-pointer">
                       <Shield className="mr-2 h-4 w-4" />
                       Admin Panel
                     </Link>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
+                <DropdownMenuSeparator className="bg-border/50" />
+                <DropdownMenuItem onClick={() => signOut()} className="rounded-xl text-red-500 focus:text-red-500 focus:bg-red-50 dark:focus:bg-red-950 cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-3">
               <Link href="/login">
-                <Button variant="ghost" size="sm">Sign in</Button>
+                <Button variant="ghost" size="sm" className="text-sm font-medium rounded-full px-5 h-10 hover:bg-muted/50">
+                  Sign in
+                </Button>
               </Link>
               <Link href="/register">
-                <Button size="sm">Get Started</Button>
+                <Button size="sm" className="rounded-full px-6 h-10 text-sm font-semibold shadow-sm shadow-primary/20 hover:shadow-md transition-all">
+                  Get Started
+                </Button>
               </Link>
             </div>
           )}
@@ -110,33 +108,40 @@ export function Header() {
           {/* Mobile menu */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
+              <Button variant="ghost" size="icon" className="md:hidden rounded-full h-10 w-10">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72">
-              <nav className="flex flex-col gap-4 mt-8">
+            <SheetContent side="right" className="w-[85vw] max-w-sm rounded-l-3xl border-l-0 p-6">
+              <div className="mt-2 mb-10">
+                <img src="/logo.png" alt="MaDe Market" className="h-8 w-auto dark:brightness-0 dark:invert" />
+              </div>
+              <nav className="flex flex-col gap-2">
                 {navLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
                     onClick={() => setMobileOpen(false)}
-                    className="text-lg font-medium hover:text-primary transition-colors"
+                    className="px-4 py-3 text-base font-medium rounded-2xl hover:bg-muted/50 transition-colors"
                   >
                     {link.label}
                   </Link>
                 ))}
-                {!session?.user && (
-                  <>
-                    <Link href="/login" onClick={() => setMobileOpen(false)}>
-                      <Button variant="outline" className="w-full">Sign in</Button>
-                    </Link>
-                    <Link href="/register" onClick={() => setMobileOpen(false)}>
-                      <Button className="w-full">Get Started</Button>
-                    </Link>
-                  </>
-                )}
               </nav>
+              {!session?.user && (
+                <div className="flex flex-col gap-3 mt-10 pt-8 border-t border-border/50">
+                  <Link href="/login" onClick={() => setMobileOpen(false)}>
+                    <Button variant="outline" className="w-full rounded-full h-12 text-base border-border">
+                      Sign in
+                    </Button>
+                  </Link>
+                  <Link href="/register" onClick={() => setMobileOpen(false)}>
+                    <Button className="w-full rounded-full h-12 text-base shadow-lg shadow-primary/20">
+                      Get Started
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </SheetContent>
           </Sheet>
         </div>

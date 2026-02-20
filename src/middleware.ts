@@ -6,7 +6,7 @@ export default auth((req) => {
   const user = req.auth?.user;
 
   // Public routes - no auth required
-  const publicPaths = ["/", "/login", "/register", "/products", "/compare", "/api/auth"];
+  const publicPaths = ["/", "/login", "/register", "/products", "/compare", "/cart", "/store", "/privacy", "/terms", "/about", "/contact", "/api/auth"];
   const isPublic = publicPaths.some(
     (path) => pathname === path || pathname.startsWith(path + "/")
   );
@@ -46,5 +46,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.svg$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.ico$).*)"],
 };
