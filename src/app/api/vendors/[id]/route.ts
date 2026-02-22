@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { vendors, branches } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { vendors, branches, storeProducts, products } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -44,10 +44,46 @@ export async function GET(
     const vendorBranches = await db
       .select()
       .from(branches)
-      .where(eq(branches.vendorId, vendor.id))
+      .where(
+        and(
+          eq(branches.vendorId, vendor.id),
+          eq(branches.active, true)
+        )
+      )
       .orderBy(branches.createdAt);
 
-    return NextResponse.json({ ...vendor, branches: vendorBranches });
+    // Fetch products for each branch
+    const branchesWithProducts = await Promise.all(
+      vendorBranches.map(async (branch) => {
+        const branchProducts = await db
+          .select({
+            id: storeProducts.id,
+            productId: products.id,
+            productName: products.name,
+            productImage: products.imageUrl,
+            unit: products.unit,
+            price: storeProducts.price,
+            bundleInfo: storeProducts.bundleInfo,
+            inStock: storeProducts.inStock,
+          })
+          .from(storeProducts)
+          .innerJoin(products, eq(storeProducts.productId, products.id))
+          .where(eq(storeProducts.branchId, branch.id));
+
+        return { ...branch, products: branchProducts };
+      })
+    );
+
+    const totalProductCount = branchesWithProducts.reduce(
+      (sum, b) => sum + b.products.length,
+      0
+    );
+
+    return NextResponse.json({
+      ...vendor,
+      branches: branchesWithProducts,
+      totalProductCount,
+    });
   } catch (error) {
     console.error("Vendor fetch error:", error);
     return NextResponse.json({ error: "Failed to fetch vendor" }, { status: 500 });

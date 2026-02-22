@@ -4,12 +4,21 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { useContext } from "react";
+import { SessionContext } from "next-auth/react";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/use-cart";
 import { useSaved } from "@/hooks/use-saved";
 import { formatCurrency } from "@/lib/currency";
 import { cn, productUrl } from "@/lib/utils";
+
+/** Safe session check — reads context directly instead of useSession() to avoid
+ *  throwing when SessionProvider is missing during Turbopack HMR or navigation */
+function useAuthStatus(): "authenticated" | "unauthenticated" | "loading" {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ctx = useContext(SessionContext) as any;
+  return ctx?.status ?? "unauthenticated";
+}
 
 interface ProductCardProps {
   id: string;
@@ -42,7 +51,7 @@ export function ProductCard({
   const toggleSaved = useSaved((s) => s.toggleSaved);
   const isSavedInStore = useSaved((s) => s.savedIds.includes(id));
   const hasHydrated = useSaved((s) => s._hasHydrated);
-  const { status } = useSession();
+  const status = useAuthStatus();
   const router = useRouter();
 
   const saved = hasHydrated ? isSavedInStore : false;
