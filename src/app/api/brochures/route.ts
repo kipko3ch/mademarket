@@ -2,29 +2,31 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { brochures, stores } from "@/db/schema";
+import { brochures, branches, vendors } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 
-// GET /api/brochures — Return published brochures with store name/logo/slug
+// GET /api/brochures — Return published brochures with vendor/branch info
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const storeId = searchParams.get("storeId");
+    const branchId = searchParams.get("branchId") || searchParams.get("storeId");
 
     const conditions = [
       eq(brochures.status, "published"),
-      eq(stores.approved, true),
-      eq(stores.suspended, false),
+      eq(vendors.approved, true),
+      eq(vendors.active, true),
+      eq(branches.approved, true),
+      eq(branches.active, true),
     ];
 
-    if (storeId) {
-      conditions.push(eq(brochures.storeId, storeId));
+    if (branchId) {
+      conditions.push(eq(brochures.branchId, branchId));
     }
 
     const results = await db
       .select({
         id: brochures.id,
-        storeId: brochures.storeId,
+        branchId: brochures.branchId,
         title: brochures.title,
         slug: brochures.slug,
         description: brochures.description,
@@ -34,16 +36,26 @@ export async function GET(request: NextRequest) {
         validFrom: brochures.validFrom,
         validUntil: brochures.validUntil,
         createdAt: brochures.createdAt,
-        storeName: stores.name,
-        storeSlug: stores.slug,
-        storeLogo: stores.logoUrl,
+        vendorName: vendors.name,
+        vendorSlug: vendors.slug,
+        vendorLogo: vendors.logoUrl,
+        branchTown: branches.town,
       })
       .from(brochures)
-      .innerJoin(stores, eq(brochures.storeId, stores.id))
+      .innerJoin(branches, eq(brochures.branchId, branches.id))
+      .innerJoin(vendors, eq(branches.vendorId, vendors.id))
       .where(and(...conditions))
       .orderBy(desc(brochures.createdAt));
 
-    return NextResponse.json(results);
+    // Map to keep backward-compatible field names for frontend
+    const mapped = results.map((r) => ({
+      ...r,
+      storeName: r.vendorName,
+      storeSlug: r.vendorSlug,
+      storeLogo: r.vendorLogo,
+    }));
+
+    return NextResponse.json(mapped);
   } catch (error) {
     console.error("Error fetching brochures:", error);
     return NextResponse.json(

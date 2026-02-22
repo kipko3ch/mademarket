@@ -1,5 +1,7 @@
 import type {
   users,
+  vendors,
+  branches,
   stores,
   products,
   storeProducts,
@@ -10,6 +12,8 @@ import type {
   featuredProducts,
   productClicks,
   bundles,
+  bundleProducts,
+  bundleImages,
   brochures,
 } from "@/db/schema";
 
@@ -18,7 +22,15 @@ import type {
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
+export type Vendor = typeof vendors.$inferSelect;
+export type NewVendor = typeof vendors.$inferInsert;
+
+export type Branch = typeof branches.$inferSelect;
+export type NewBranch = typeof branches.$inferInsert;
+
+/** @deprecated Use Vendor/Branch instead */
 export type Store = typeof stores.$inferSelect;
+/** @deprecated Use NewVendor/NewBranch instead */
 export type NewStore = typeof stores.$inferInsert;
 
 export type Product = typeof products.$inferSelect;
@@ -36,6 +48,8 @@ export type SearchLog = typeof searchLogs.$inferSelect;
 export type FeaturedProduct = typeof featuredProducts.$inferSelect;
 export type ProductClick = typeof productClicks.$inferSelect;
 export type Bundle = typeof bundles.$inferSelect;
+export type BundleProduct = typeof bundleProducts.$inferSelect;
+export type BundleImage = typeof bundleImages.$inferSelect;
 export type Brochure = typeof brochures.$inferSelect;
 
 // ─── Custom types ────────────────────────────────────────────────────────────
@@ -49,6 +63,32 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface CartBranchBreakdown {
+  branchId: string;
+  branchName: string;
+  vendorId: string;
+  vendorName: string;
+  vendorSlug: string;
+  branchSlug: string;
+  town: string | null;
+  vendorLogoUrl?: string | null;
+  vendorWebsiteUrl?: string | null;
+  branchWhatsapp?: string | null;
+  total: number;
+  itemCount: number;
+  totalItems: number;
+  hasAllItems: boolean;
+  items: {
+    productId: string;
+    productName: string;
+    productImage?: string | null;
+    price: number;
+    quantity: number;
+    externalUrl?: string | null;
+  }[];
+}
+
+/** @deprecated Use CartBranchBreakdown instead */
 export interface CartStoreBreakdown {
   storeId: string;
   storeName: string;
@@ -70,8 +110,8 @@ export interface CartStoreBreakdown {
 }
 
 export interface CartCalculation {
-  stores: CartStoreBreakdown[];
-  cheapestStoreId: string;
+  branches: CartBranchBreakdown[];
+  cheapestBranchId: string;
   cheapestTotal: number;
   maxSavings: number;
 }
@@ -82,8 +122,11 @@ export interface CompareResult {
   productImage?: string | null;
   category: string;
   prices: {
-    storeId: string;
-    storeName: string;
+    branchId: string;
+    vendorName: string;
+    branchTown: string | null;
+    vendorSlug: string;
+    branchSlug: string;
     price: number;
     isCheapest: boolean;
     difference: number;

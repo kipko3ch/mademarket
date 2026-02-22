@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
         brand: products.brand,
         size: products.size,
         barcode: products.barcode,
-        storeCount: sql<number>`(select count(*) from store_products where store_products.product_id = ${products.id})`.as("store_count"),
+        branchCount: sql<number>`(select count(*) from store_products where store_products.product_id = ${products.id})`.as("branch_count"),
       })
       .from(products)
       .orderBy(products.name);
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
           name: p.name,
           normalizedName: p.normalizedName,
           imageUrl: p.imageUrl,
-          storeCount: Number(p.storeCount),
+          branchCount: Number(p.branchCount),
         })),
       }));
 
@@ -148,24 +148,24 @@ export async function POST(req: NextRequest) {
 
       // Reassign all store_products from duplicates to canonical
       for (const dupId of duplicateIds) {
-        // Check for conflicts: if canonical already has this store's product
+        // Check for conflicts: if canonical already has this branch's product
         const dupStoreProducts = await db
           .select()
           .from(storeProducts)
           .where(eq(storeProducts.productId, dupId));
 
         for (const sp of dupStoreProducts) {
-          // Check if canonical already has an entry for this store
+          // Check if canonical already has an entry for this branch
           const [existingEntry] = await db
             .select({ id: storeProducts.id })
             .from(storeProducts)
             .where(
-              sql`${storeProducts.storeId} = ${sp.storeId} AND ${storeProducts.productId} = ${canonical.id}`
+              sql`${storeProducts.branchId} = ${sp.branchId} AND ${storeProducts.productId} = ${canonical.id}`
             )
             .limit(1);
 
           if (existingEntry) {
-            // Duplicate entry for same store — delete the dup's entry
+            // Duplicate entry for same branch — delete the dup's entry
             await db.delete(storeProducts).where(eq(storeProducts.id, sp.id));
           } else {
             // Reassign to canonical

@@ -52,7 +52,7 @@ export async function GET() {
         unit: products.unit,
         categoryName: categories.name,
         minPrice: sql<number>`min(${storeProducts.price})`.as("min_price"),
-        storeCount: sql<number>`count(distinct ${storeProducts.storeId})`.as("store_count"),
+        storeCount: sql<number>`count(distinct ${storeProducts.branchId})`.as("store_count"),
         clickCount: sql<number>`coalesce(${clickCounts.clickCount}, 0)`.as("click_count"),
         searchCount: sql<number>`coalesce(${searchCounts.searchCount}, 0)`.as("search_count"),
         popularityScore:

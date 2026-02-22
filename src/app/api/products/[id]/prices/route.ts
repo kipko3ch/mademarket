@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { products, storeProducts, stores, categories } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { products, storeProducts, vendors, branches, categories } from "@/db/schema";
+import { eq, and, isNotNull } from "drizzle-orm";
 
-// GET /api/products/[id]/prices — Get product info + all store prices in ONE query
+// GET /api/products/[id]/prices — Get product info + all branch prices in ONE query
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -11,7 +11,7 @@ export async function GET(
   const { id } = await params;
 
   try {
-    // Parallel: product info + store prices
+    // Parallel: product info + branch prices
     const [productRows, priceRows] = await Promise.all([
       db
         .select({
@@ -31,18 +31,33 @@ export async function GET(
 
       db
         .select({
-          storeId: stores.id,
-          storeName: stores.name,
-          storeLogo: stores.logoUrl,
-          storeAddress: stores.address,
-          storeWebsite: stores.websiteUrl,
+          branchId: branches.id,
+          vendorName: vendors.name,
+          branchTown: branches.town,
+          vendorSlug: vendors.slug,
+          branchSlug: branches.slug,
+          vendorLogoUrl: vendors.logoUrl,
+          branchAddress: branches.address,
+          vendorWebsiteUrl: vendors.websiteUrl,
           price: storeProducts.price,
           inStock: storeProducts.inStock,
           externalUrl: storeProducts.externalUrl,
         })
         .from(storeProducts)
-        .innerJoin(stores, and(eq(storeProducts.storeId, stores.id), eq(stores.approved, true), eq(stores.suspended, false)))
-        .where(eq(storeProducts.productId, id))
+        .innerJoin(branches, and(
+          eq(storeProducts.branchId, branches.id),
+          eq(branches.approved, true),
+          eq(branches.active, true)
+        ))
+        .innerJoin(vendors, and(
+          eq(branches.vendorId, vendors.id),
+          eq(vendors.approved, true),
+          eq(vendors.active, true)
+        ))
+        .where(and(
+          eq(storeProducts.productId, id),
+          isNotNull(storeProducts.branchId)
+        ))
         .orderBy(storeProducts.price),
     ]);
 
@@ -61,7 +76,7 @@ export async function GET(
       product: productRows[0],
       prices,
       cheapestPrice,
-      storeCount: prices.length,
+      branchCount: prices.length,
     });
   } catch (error) {
     console.error("Product prices fetch error:", error);

@@ -25,12 +25,14 @@ interface Banner {
 
 interface StoreData {
   id: string;
-  name: string;
-  slug: string;
-  logoUrl: string | null;
-  description: string | null;
-  region: string | null;
-  city: string | null;
+  vendorName: string;
+  vendorSlug: string;
+  vendorLogoUrl: string | null;
+  vendorDescription: string | null;
+  branchName: string;
+  branchSlug: string;
+  branchTown: string | null;
+  branchRegion: string | null;
   productCount: number;
 }
 
@@ -60,9 +62,10 @@ interface BundleData {
   price: string;
   externalUrl: string | null;
   items: string | null;
-  storeName: string;
-  storeLogoUrl: string | null;
-  storeId: string;
+  vendorName: string;
+  vendorLogoUrl: string | null;
+  vendorSlug: string;
+  branchId: string | null;
 }
 
 interface HomeClientProps {
@@ -107,18 +110,18 @@ const FALLBACK_BANNERS: Banner[] = [
 ];
 
 const FALLBACK_STORES: StoreData[] = [
-  { id: "f1", name: "Shoprite", slug: "shoprite", logoUrl: "/images/shoprite.jpeg", description: null, region: null, city: null, productCount: 0 },
-  { id: "f2", name: "Checkers", slug: "checkers", logoUrl: "/images/checkers.png", description: null, region: null, city: null, productCount: 0 },
-  { id: "f3", name: "SPAR", slug: "spar", logoUrl: "/images/spar.jpg", description: null, region: null, city: null, productCount: 0 },
-  { id: "f4", name: "Choppies", slug: "choppies", logoUrl: "/images/choppies.png", description: null, region: null, city: null, productCount: 0 },
-  { id: "f5", name: "Food Lover's", slug: "food-lovers", logoUrl: "/images/foodloversmarket.png", description: null, region: null, city: null, productCount: 0 },
-  { id: "f6", name: "U-Save", slug: "usave", logoUrl: "/images/usave.png", description: null, region: null, city: null, productCount: 0 },
-  { id: "f7", name: "Woermann Brock", slug: "wb", logoUrl: "/images/wb.jpeg", description: null, region: null, city: null, productCount: 0 },
-  { id: "f8", name: "Namica", slug: "namica", logoUrl: "/images/namica.jpg", description: null, region: null, city: null, productCount: 0 },
+  { id: "f1", vendorName: "Shoprite", vendorSlug: "shoprite", vendorLogoUrl: "/images/shoprite.jpeg", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
+  { id: "f2", vendorName: "Checkers", vendorSlug: "checkers", vendorLogoUrl: "/images/checkers.png", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
+  { id: "f3", vendorName: "SPAR", vendorSlug: "spar", vendorLogoUrl: "/images/spar.jpg", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
+  { id: "f4", vendorName: "Choppies", vendorSlug: "choppies", vendorLogoUrl: "/images/choppies.png", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
+  { id: "f5", vendorName: "Food Lover's", vendorSlug: "food-lovers", vendorLogoUrl: "/images/foodloversmarket.png", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
+  { id: "f6", vendorName: "U-Save", vendorSlug: "usave", vendorLogoUrl: "/images/usave.png", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
+  { id: "f7", vendorName: "Woermann Brock", vendorSlug: "wb", vendorLogoUrl: "/images/wb.jpeg", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
+  { id: "f8", vendorName: "Namica", vendorSlug: "namica", vendorLogoUrl: "/images/namica.jpg", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
 ];
 
-// Store brand colors for the marquee letter icons
-const STORE_COLORS: Record<string, string> = {
+// Vendor brand colors for the marquee letter icons
+const VENDOR_COLORS: Record<string, string> = {
   "Shoprite": "bg-red-600",
   "Checkers": "bg-blue-700",
   "SPAR": "bg-green-600",
@@ -136,17 +139,17 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
   const userLocation = useLocation((s) => s.location);
   const hasRealStores = stores.length > 0;
 
-  // Sort stores by proximity: same city first → same region → rest
+  // Sort stores by proximity: same town first → same region → rest
   const sortedStores = [...(hasRealStores ? stores : FALLBACK_STORES)].sort((a, b) => {
     if (!userLocation?.city) return 0;
     const userCity = userLocation.city;
     const userRegion = userLocation.region || getRegionForCity(userCity);
-    const aCity = a.city === userCity;
-    const bCity = b.city === userCity;
-    if (aCity && !bCity) return -1;
-    if (!aCity && bCity) return 1;
-    const aRegion = a.region === userRegion;
-    const bRegion = b.region === userRegion;
+    const aTown = a.branchTown === userCity;
+    const bTown = b.branchTown === userCity;
+    if (aTown && !bTown) return -1;
+    if (!aTown && bTown) return 1;
+    const aRegion = a.branchRegion === userRegion;
+    const bRegion = b.branchRegion === userRegion;
     if (aRegion && !bRegion) return -1;
     if (!aRegion && bRegion) return 1;
     return 0;
@@ -318,7 +321,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
         )}
 
         {/* ═══════════════════════════════════════════════════════════
-            § 4.7  BUNDLES — Store bundles with external redirect
+            § 4.7  BUNDLES — Vendor bundles with external redirect
         ═══════════════════════════════════════════════════════════ */}
         {bundles.length > 0 && (
           <BundleCarousel bundles={bundles} />
@@ -528,8 +531,8 @@ function BundleCarousel({ bundles }: { bundles: BundleData[] }) {
 function BundleCard({ bundle }: { bundle: BundleData }) {
   const itemsList = bundle.items ? bundle.items.split(",").map((s) => s.trim()).filter(Boolean) : [];
 
-  const href = bundle.slug && bundle.storeId
-    ? `/store/${bundle.storeId}/bundle/${bundle.slug}`
+  const href = bundle.slug && bundle.vendorSlug
+    ? `/store/${bundle.vendorSlug}/bundle/${bundle.slug}`
     : bundle.externalUrl || "#";
   const isExternal = !bundle.slug && bundle.externalUrl;
 
@@ -562,12 +565,12 @@ function BundleCard({ bundle }: { bundle: BundleData }) {
       {/* Bundle Info */}
       <div className="p-3 sm:p-4">
         <div className="flex items-center gap-2 mb-2">
-          {bundle.storeLogoUrl ? (
+          {bundle.vendorLogoUrl ? (
             <div className="h-5 w-5 rounded overflow-hidden bg-white border border-slate-100">
-              <img src={bundle.storeLogoUrl} alt="" className="h-full w-full object-contain" />
+              <img src={bundle.vendorLogoUrl} alt="" className="h-full w-full object-contain" />
             </div>
           ) : null}
-          <span className="text-[10px] sm:text-xs text-slate-400 font-medium">{bundle.storeName}</span>
+          <span className="text-[10px] sm:text-xs text-slate-400 font-medium">{bundle.vendorName}</span>
         </div>
         <h4 className="font-bold text-sm sm:text-base text-slate-900 mb-1.5 line-clamp-1">{bundle.name}</h4>
         {bundle.description && (
@@ -595,7 +598,8 @@ function BundleCard({ bundle }: { bundle: BundleData }) {
 // ─── Retailer Marquee ───────────────────────────────────────────────────────
 
 function RetailerMarquee({ stores, hasRealStores }: { stores: StoreData[]; hasRealStores: boolean }) {
-  const unique = Array.from(new Map(stores.map(s => [s.id, s])).values());
+  // De-duplicate by vendor slug so each vendor appears once in the marquee
+  const unique = Array.from(new Map(stores.map(s => [s.vendorSlug, s])).values());
   // Repeat enough times so the marquee never shows a visible gap/restart
   const repeatCount = unique.length <= 4 ? 4 : unique.length <= 8 ? 3 : 2;
   const doubled = Array.from({ length: repeatCount }, () => unique).flat();
@@ -615,30 +619,30 @@ function RetailerMarquee({ stores, hasRealStores }: { stores: StoreData[]; hasRe
         style={{ "--scroll-offset": scrollPercent, "--scroll-duration": scrollDuration } as React.CSSProperties}
       >
         {doubled.map((s, i) => {
-          const href = hasRealStores ? `/store/${s.slug || s.id}` : "/products";
-          const colorClass = STORE_COLORS[s.name] || "bg-slate-500";
+          const href = hasRealStores ? `/store/${s.vendorSlug}` : "/products";
+          const colorClass = VENDOR_COLORS[s.vendorName] || "bg-slate-500";
 
           return (
             <Link
-              key={`${s.id}-${i}`}
+              key={`${s.vendorSlug}-${i}`}
               href={href}
               className="flex-shrink-0 flex flex-col items-center gap-2.5 group transition-all duration-300 cursor-pointer"
             >
               <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
-                {s.logoUrl ? (
+                {s.vendorLogoUrl ? (
                   <img
-                    src={s.logoUrl}
-                    alt={s.name}
+                    src={s.vendorLogoUrl}
+                    alt={s.vendorName}
                     className="max-h-full max-w-full object-contain transition-all duration-500"
                   />
                 ) : (
                   <div className={`w-full h-full ${colorClass} rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-xl`}>
-                    {s.name.charAt(0)}
+                    {s.vendorName.charAt(0)}
                   </div>
                 )}
               </div>
               <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-primary transition-colors">
-                {s.name}
+                {s.vendorName}
               </span>
             </Link>
           );

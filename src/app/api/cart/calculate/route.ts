@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { storeProducts, products, stores } from "@/db/schema";
-import { inArray, eq, and } from "drizzle-orm";
+import { storeProducts, products, vendors, branches } from "@/db/schema";
+import { inArray, eq, and, isNotNull } from "drizzle-orm";
 import { z } from "zod";
-import type { CartCalculation, CartStoreBreakdown } from "@/types";
+import type { CartCalculation, CartBranchBreakdown } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -26,48 +26,66 @@ export async function POST(req: NextRequest) {
     const quantityMap = new Map(items.map((i) => [i.productId, i.quantity]));
     const totalItemsRequested = productIds.length;
 
-    // Single optimized query: get all store prices for requested products
+    // Single optimized query: get all branch prices for requested products
     const results = await db
       .select({
-        storeId: stores.id,
-        storeName: stores.name,
-        storeLogoUrl: stores.logoUrl,
-        storeWhatsapp: stores.whatsappNumber,
-        storeWebsiteUrl: stores.websiteUrl,
+        branchId: branches.id,
+        branchName: branches.branchName,
+        vendorId: vendors.id,
+        vendorName: vendors.name,
+        vendorSlug: vendors.slug,
+        branchSlug: branches.slug,
+        town: branches.town,
+        vendorLogoUrl: vendors.logoUrl,
+        vendorWebsiteUrl: vendors.websiteUrl,
+        branchWhatsapp: branches.whatsappNumber,
         productId: storeProducts.productId,
         productName: products.name,
+        productImage: products.imageUrl,
         price: storeProducts.price,
+        externalUrl: storeProducts.externalUrl,
       })
       .from(storeProducts)
-      .innerJoin(stores, and(
-        eq(storeProducts.storeId, stores.id),
-        eq(stores.approved, true),
-        eq(stores.suspended, false)
+      .innerJoin(branches, and(
+        eq(storeProducts.branchId, branches.id),
+        eq(branches.approved, true),
+        eq(branches.active, true)
+      ))
+      .innerJoin(vendors, and(
+        eq(branches.vendorId, vendors.id),
+        eq(vendors.approved, true),
+        eq(vendors.active, true)
       ))
       .innerJoin(products, eq(storeProducts.productId, products.id))
       .where(
         and(
           inArray(storeProducts.productId, productIds),
-          eq(storeProducts.inStock, true)
+          eq(storeProducts.inStock, true),
+          isNotNull(storeProducts.branchId)
         )
       )
-      .orderBy(stores.name, products.name);
+      .orderBy(vendors.name, products.name);
 
-    // Group results by store and calculate totals
-    const storeMap = new Map<string, CartStoreBreakdown>();
+    // Group results by branch and calculate totals
+    const branchMap = new Map<string, CartBranchBreakdown>();
 
     for (const row of results) {
       const quantity = quantityMap.get(row.productId) || 1;
       const price = Number(row.price);
 
-      if (!storeMap.has(row.storeId)) {
-        storeMap.set(row.storeId, {
-            storeId: row.storeId,
-            storeName: row.storeName,
-            storeLogoUrl: row.storeLogoUrl,
-            storeWebsiteUrl: row.storeWebsiteUrl,
-            storeWhatsapp: row.storeWhatsapp,
-            total: 0,
+      if (!branchMap.has(row.branchId)) {
+        branchMap.set(row.branchId, {
+          branchId: row.branchId,
+          branchName: row.branchName,
+          vendorId: row.vendorId,
+          vendorName: row.vendorName,
+          vendorSlug: row.vendorSlug,
+          branchSlug: row.branchSlug,
+          town: row.town,
+          vendorLogoUrl: row.vendorLogoUrl,
+          vendorWebsiteUrl: row.vendorWebsiteUrl,
+          branchWhatsapp: row.branchWhatsapp,
+          total: 0,
           itemCount: 0,
           totalItems: totalItemsRequested,
           hasAllItems: false,
@@ -75,68 +93,70 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      const store = storeMap.get(row.storeId)!;
-      store.items.push({
+      const branch = branchMap.get(row.branchId)!;
+      branch.items.push({
         productId: row.productId,
         productName: row.productName,
+        productImage: row.productImage,
         price,
         quantity,
+        externalUrl: row.externalUrl,
       });
-      store.total += price * quantity;
-      store.itemCount = store.items.length;
+      branch.total += price * quantity;
+      branch.itemCount = branch.items.length;
     }
 
-    const storeBreakdowns = Array.from(storeMap.values());
+    const branchBreakdowns = Array.from(branchMap.values());
 
-    // Mark which stores have all items
-    for (const store of storeBreakdowns) {
-      store.hasAllItems = store.itemCount === totalItemsRequested;
+    // Mark which branches have all items
+    for (const branch of branchBreakdowns) {
+      branch.hasAllItems = branch.itemCount === totalItemsRequested;
     }
 
-    // Separate into full-coverage and partial-coverage stores
-    const fullStores = storeBreakdowns.filter((s) => s.hasAllItems);
-    const partialStores = storeBreakdowns.filter((s) => !s.hasAllItems);
+    // Separate into full-coverage and partial-coverage branches
+    const fullBranches = branchBreakdowns.filter((b) => b.hasAllItems);
+    const partialBranches = branchBreakdowns.filter((b) => !b.hasAllItems);
 
-    if (storeBreakdowns.length === 0) {
+    if (branchBreakdowns.length === 0) {
       return NextResponse.json({
-        stores: [],
-        cheapestStoreId: null,
+        branches: [],
+        cheapestBranchId: null,
         cheapestTotal: 0,
         maxSavings: 0,
       });
     }
 
     // Round totals
-    storeBreakdowns.forEach((s) => {
-      s.total = Math.round(s.total * 100) / 100;
+    branchBreakdowns.forEach((b) => {
+      b.total = Math.round(b.total * 100) / 100;
     });
 
-    // Sort full stores by total ascending, partial stores by coverage then price
-    fullStores.sort((a, b) => a.total - b.total);
-    partialStores.sort((a, b) => b.itemCount - a.itemCount || a.total - b.total);
+    // Sort full branches by total ascending, partial branches by coverage then price
+    fullBranches.sort((a, b) => a.total - b.total);
+    partialBranches.sort((a, b) => b.itemCount - a.itemCount || a.total - b.total);
 
-    // Combined list: full stores first, then partial
-    const sortedStores = [...fullStores, ...partialStores];
+    // Combined list: full branches first, then partial
+    const sortedBranches = [...fullBranches, ...partialBranches];
 
-    // Only calculate savings among full-coverage stores (apples-to-apples comparison)
+    // Only calculate savings among full-coverage branches (apples-to-apples comparison)
     let maxSavings = 0;
-    let cheapestStoreId = sortedStores[0]?.storeId ?? null;
-    let cheapestTotal = sortedStores[0]?.total ?? 0;
+    let cheapestBranchId = sortedBranches[0]?.branchId ?? null;
+    let cheapestTotal = sortedBranches[0]?.total ?? 0;
 
-    if (fullStores.length >= 2) {
-      const cheapestFull = fullStores[0];
-      const mostExpensiveFull = fullStores[fullStores.length - 1];
+    if (fullBranches.length >= 2) {
+      const cheapestFull = fullBranches[0];
+      const mostExpensiveFull = fullBranches[fullBranches.length - 1];
       maxSavings = Math.round((mostExpensiveFull.total - cheapestFull.total) * 100) / 100;
-      cheapestStoreId = cheapestFull.storeId;
+      cheapestBranchId = cheapestFull.branchId;
       cheapestTotal = cheapestFull.total;
-    } else if (fullStores.length === 1) {
-      cheapestStoreId = fullStores[0].storeId;
-      cheapestTotal = fullStores[0].total;
+    } else if (fullBranches.length === 1) {
+      cheapestBranchId = fullBranches[0].branchId;
+      cheapestTotal = fullBranches[0].total;
     }
 
     const response: CartCalculation = {
-      stores: sortedStores,
-      cheapestStoreId,
+      branches: sortedBranches,
+      cheapestBranchId,
       cheapestTotal,
       maxSavings,
     };

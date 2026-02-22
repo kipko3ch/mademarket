@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { stores, users } from "@/db/schema";
+import { vendors, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-// PATCH /api/admin/stores/[id] — Update a store (approve/reject/suspend/settings)
+// PATCH /api/admin/stores/[id] — Update a vendor (approve/reject/deactivate/settings)
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,7 +14,7 @@ export async function PATCH(
   const { id } = await params;
   const session = await auth();
 
-  // Allow admin or vendor (vendors can update their own store)
+  // Allow admin or vendor (vendors can update their own vendor profile)
   if (!session?.user || (session.user.role !== "admin" && session.user.role !== "vendor")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -26,16 +26,12 @@ export async function PATCH(
     // Admin-only fields
     if (session.user.role === "admin") {
       if ("approved" in body) updateData.approved = Boolean(body.approved);
-      if ("suspended" in body) updateData.suspended = Boolean(body.suspended);
-      if ("showInMarquee" in body) updateData.showInMarquee = Boolean(body.showInMarquee);
-      if ("marqueeOrder" in body) updateData.marqueeOrder = Number(body.marqueeOrder);
+      if ("active" in body) updateData.active = Boolean(body.active);
     }
 
     // Fields editable by both admin and vendor
     if ("name" in body) updateData.name = body.name;
     if ("description" in body) updateData.description = body.description || null;
-    if ("address" in body) updateData.address = body.address || null;
-    if ("whatsappNumber" in body) updateData.whatsappNumber = body.whatsappNumber || null;
     if ("logoUrl" in body) updateData.logoUrl = body.logoUrl || null;
     if ("bannerUrl" in body) updateData.bannerUrl = body.bannerUrl || null;
     if ("websiteUrl" in body) updateData.websiteUrl = body.websiteUrl || null;
@@ -45,23 +41,23 @@ export async function PATCH(
     }
 
     const [updated] = await db
-      .update(stores)
+      .update(vendors)
       .set(updateData)
-      .where(eq(stores.id, id))
+      .where(eq(vendors.id, id))
       .returning();
 
     if (!updated) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+      return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
     }
 
     return NextResponse.json(updated);
   } catch (error) {
-    console.error("Store update error:", error);
-    return NextResponse.json({ error: "Failed to update store" }, { status: 500 });
+    console.error("Vendor update error:", error);
+    return NextResponse.json({ error: "Failed to update vendor" }, { status: 500 });
   }
 }
 
-// DELETE /api/admin/stores/[id] — Delete a vendor store and all associated data
+// DELETE /api/admin/stores/[id] — Delete a vendor and all associated data (branches cascade)
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -74,33 +70,33 @@ export async function DELETE(
   }
 
   try {
-    // Get store info first (for the owner's user ID)
-    const [store] = await db
-      .select({ id: stores.id, ownerId: stores.ownerId, name: stores.name })
-      .from(stores)
-      .where(eq(stores.id, id))
+    // Get vendor info first (for the owner's user ID)
+    const [vendor] = await db
+      .select({ id: vendors.id, ownerId: vendors.ownerId, name: vendors.name })
+      .from(vendors)
+      .where(eq(vendors.id, id))
       .limit(1);
 
-    if (!store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    if (!vendor) {
+      return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
     }
 
-    // Delete the store — all related data (storeProducts, priceHistory,
+    // Delete the vendor — all related data (branches, storeProducts, priceHistory,
     // sponsoredListings, bundles, brochures) cascade-deletes automatically
-    await db.delete(stores).where(eq(stores.id, id));
+    await db.delete(vendors).where(eq(vendors.id, id));
 
     // Downgrade the vendor user back to regular user
     await db
       .update(users)
       .set({ role: "user" })
-      .where(eq(users.id, store.ownerId));
+      .where(eq(users.id, vendor.ownerId));
 
     return NextResponse.json({
       success: true,
-      message: `Store "${store.name}" and all associated data have been deleted`,
+      message: `Vendor "${vendor.name}" and all associated data have been deleted`,
     });
   } catch (error) {
-    console.error("Store delete error:", error);
-    return NextResponse.json({ error: "Failed to delete store" }, { status: 500 });
+    console.error("Vendor delete error:", error);
+    return NextResponse.json({ error: "Failed to delete vendor" }, { status: 500 });
   }
 }

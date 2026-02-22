@@ -2,13 +2,13 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { products, storeProducts, stores, categories } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { products, storeProducts, vendors, branches, categories } from "@/db/schema";
+import { eq, and, isNotNull } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { normalizeProductName, slugify } from "@/lib/utils";
 
-// GET /api/products/[id] — Return a single product with full details and store prices
+// GET /api/products/[id] — Return a single product with full details and branch prices
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -34,22 +34,34 @@ export async function GET(
         .where(eq(products.id, id))
         .limit(1),
 
-      // Store prices — sorted by lowest first
+      // Branch prices — sorted by lowest first
       db
         .select({
-          storeId: stores.id,
-          storeName: stores.name,
-          storeLogo: stores.logoUrl,
+          branchId: branches.id,
+          vendorName: vendors.name,
+          branchTown: branches.town,
+          vendorSlug: vendors.slug,
+          branchSlug: branches.slug,
+          vendorLogoUrl: vendors.logoUrl,
           price: storeProducts.price,
           inStock: storeProducts.inStock,
           externalUrl: storeProducts.externalUrl,
         })
         .from(storeProducts)
-        .innerJoin(
-          stores,
-          and(eq(storeProducts.storeId, stores.id), eq(stores.approved, true), eq(stores.suspended, false))
-        )
-        .where(eq(storeProducts.productId, id))
+        .innerJoin(branches, and(
+          eq(storeProducts.branchId, branches.id),
+          eq(branches.approved, true),
+          eq(branches.active, true)
+        ))
+        .innerJoin(vendors, and(
+          eq(branches.vendorId, vendors.id),
+          eq(vendors.approved, true),
+          eq(vendors.active, true)
+        ))
+        .where(and(
+          eq(storeProducts.productId, id),
+          isNotNull(storeProducts.branchId)
+        ))
         .orderBy(storeProducts.price),
     ]);
 
@@ -60,22 +72,25 @@ export async function GET(
       );
     }
 
-    const storePrices = priceRows.map((r) => ({
-      storeId: r.storeId,
-      storeName: r.storeName,
-      storeLogo: r.storeLogo,
+    const branchPrices = priceRows.map((r) => ({
+      branchId: r.branchId,
+      vendorName: r.vendorName,
+      branchTown: r.branchTown,
+      vendorSlug: r.vendorSlug,
+      branchSlug: r.branchSlug,
+      vendorLogoUrl: r.vendorLogoUrl,
       price: Number(r.price),
       inStock: r.inStock,
       externalUrl: r.externalUrl,
     }));
 
-    const cheapestPrice = storePrices.length > 0 ? storePrices[0].price : null;
+    const cheapestPrice = branchPrices.length > 0 ? branchPrices[0].price : null;
 
     return NextResponse.json({
       ...productRows[0],
-      storePrices,
+      branchPrices,
       cheapestPrice,
-      storeCount: storePrices.length,
+      branchCount: branchPrices.length,
     });
   } catch (error) {
     console.error("Product detail error:", error);
@@ -121,16 +136,18 @@ export async function PATCH(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // If vendor, verify they have this product in their store
+    // If vendor, verify they have this product in one of their branches
     if (session.user.role === "vendor") {
       const [hasProduct] = await db
         .select({ id: storeProducts.id })
         .from(storeProducts)
-        .innerJoin(stores, eq(storeProducts.storeId, stores.id))
+        .innerJoin(branches, eq(storeProducts.branchId, branches.id))
+        .innerJoin(vendors, eq(branches.vendorId, vendors.id))
         .where(
           and(
             eq(storeProducts.productId, id),
-            eq(stores.ownerId, session.user.id)
+            eq(vendors.ownerId, session.user.id),
+            isNotNull(storeProducts.branchId)
           )
         )
         .limit(1);

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { users, stores, products, searchLogs, priceHistory, storeProducts } from "@/db/schema";
+import { users, vendors, branches, products, searchLogs, priceHistory, storeProducts } from "@/db/schema";
 import { sql, desc, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
@@ -15,14 +15,16 @@ export async function GET() {
   try {
     const [
       [userCount],
-      [storeCount],
+      [vendorCount],
+      [branchCount],
       [productCount],
       [searchCount],
       topSearches,
       recentChanges,
     ] = await Promise.all([
       db.select({ count: sql<number>`count(*)` }).from(users),
-      db.select({ count: sql<number>`count(*)` }).from(stores),
+      db.select({ count: sql<number>`count(*)` }).from(vendors),
+      db.select({ count: sql<number>`count(*)` }).from(branches),
       db.select({ count: sql<number>`count(*)` }).from(products),
       db.select({ count: sql<number>`count(*)` }).from(searchLogs),
       db
@@ -37,7 +39,8 @@ export async function GET() {
       db
         .select({
           productName: products.name,
-          storeName: stores.name,
+          branchName: branches.branchName,
+          vendorName: vendors.name,
           oldPrice: priceHistory.oldPrice,
           newPrice: priceHistory.newPrice,
           changedAt: priceHistory.changedAt,
@@ -45,14 +48,16 @@ export async function GET() {
         .from(priceHistory)
         .innerJoin(storeProducts, eq(priceHistory.storeProductId, storeProducts.id))
         .innerJoin(products, eq(storeProducts.productId, products.id))
-        .innerJoin(stores, eq(storeProducts.storeId, stores.id))
+        .innerJoin(branches, eq(storeProducts.branchId, branches.id))
+        .innerJoin(vendors, eq(branches.vendorId, vendors.id))
         .orderBy(desc(priceHistory.changedAt))
         .limit(10),
     ]);
 
     return NextResponse.json({
       totalUsers: Number(userCount.count),
-      totalStores: Number(storeCount.count),
+      totalVendors: Number(vendorCount.count),
+      totalBranches: Number(branchCount.count),
       totalProducts: Number(productCount.count),
       totalSearches: Number(searchCount.count),
       topSearches: topSearches.map((s) => ({

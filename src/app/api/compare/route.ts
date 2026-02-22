@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { storeProducts, products, stores, categories } from "@/db/schema";
-import { eq, and, inArray, ilike, or } from "drizzle-orm";
+import { storeProducts, products, vendors, branches, categories } from "@/db/schema";
+import { eq, and, inArray, ilike, or, isNotNull } from "drizzle-orm";
 import { normalizeProductName } from "@/lib/utils";
 import type { CompareResult } from "@/types";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/compare?storeIds=id1,id2,id3&category=cat&search=query
+// GET /api/compare?branchIds=id1,id2,id3&category=cat&search=query
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams;
-  const storeIdsParam = url.get("storeIds") || "";
+  const branchIdsParam = url.get("branchIds") || "";
   const category = url.get("category") || "";
   const search = url.get("search") || "";
 
-  const storeIds = storeIdsParam.split(",").filter(Boolean);
+  const branchIds = branchIdsParam.split(",").filter(Boolean);
 
-  if (storeIds.length < 2 || storeIds.length > 3) {
+  if (branchIds.length < 2 || branchIds.length > 3) {
     return NextResponse.json(
-      { error: "Select 2 or 3 stores to compare" },
+      { error: "Select 2 or 3 branches to compare" },
       { status: 400 }
     );
   }
@@ -26,7 +26,8 @@ export async function GET(req: NextRequest) {
   try {
     // Build conditions
     const conditions = [
-      inArray(storeProducts.storeId, storeIds),
+      inArray(storeProducts.branchId, branchIds),
+      isNotNull(storeProducts.branchId),
       eq(storeProducts.inStock, true),
     ];
 
@@ -44,24 +45,35 @@ export async function GET(req: NextRequest) {
       conditions.push(eq(products.categoryId, category));
     }
 
-    // Single query: get all prices for selected stores
-    // Now includes productImage for display
+    // Single query: get all prices for selected branches
     const rows = await db
       .select({
         productId: products.id,
         productName: products.name,
         productImage: products.imageUrl,
         categoryName: categories.name,
-        storeId: stores.id,
-        storeName: stores.name,
+        branchId: branches.id,
+        vendorName: vendors.name,
+        branchTown: branches.town,
+        vendorSlug: vendors.slug,
+        branchSlug: branches.slug,
         price: storeProducts.price,
       })
       .from(storeProducts)
       .innerJoin(products, eq(storeProducts.productId, products.id))
-      .innerJoin(stores, and(eq(storeProducts.storeId, stores.id), eq(stores.approved, true), eq(stores.suspended, false)))
+      .innerJoin(branches, and(
+        eq(storeProducts.branchId, branches.id),
+        eq(branches.approved, true),
+        eq(branches.active, true)
+      ))
+      .innerJoin(vendors, and(
+        eq(branches.vendorId, vendors.id),
+        eq(vendors.approved, true),
+        eq(vendors.active, true)
+      ))
       .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(and(...conditions))
-      .orderBy(products.name, stores.name);
+      .orderBy(products.name, vendors.name);
 
     // Group by product — since products table is the canonical source,
     // products with the same ID are guaranteed to be the same real-world item
@@ -79,8 +91,11 @@ export async function GET(req: NextRequest) {
       }
 
       productMap.get(row.productId)!.prices.push({
-        storeId: row.storeId,
-        storeName: row.storeName,
+        branchId: row.branchId,
+        vendorName: row.vendorName,
+        branchTown: row.branchTown,
+        vendorSlug: row.vendorSlug,
+        branchSlug: row.branchSlug,
         price: Number(row.price),
         isCheapest: false,
         difference: 0,
@@ -91,7 +106,7 @@ export async function GET(req: NextRequest) {
     const results: CompareResult[] = [];
 
     for (const product of productMap.values()) {
-      if (product.prices.length < 2) continue; // Only include products in 2+ stores
+      if (product.prices.length < 2) continue; // Only include products in 2+ branches
 
       const minPrice = Math.min(...product.prices.map((p) => p.price));
 
@@ -110,19 +125,24 @@ export async function GET(req: NextRequest) {
       return bMax - aMax;
     });
 
-    // Get store info for the selected stores
-    const selectedStores = await db
+    // Get branch info for the selected branches
+    const selectedBranches = await db
       .select({
-        id: stores.id,
-        name: stores.name,
-        logoUrl: stores.logoUrl,
+        id: branches.id,
+        branchName: branches.branchName,
+        town: branches.town,
+        vendorName: vendors.name,
+        vendorSlug: vendors.slug,
+        branchSlug: branches.slug,
+        vendorLogoUrl: vendors.logoUrl,
       })
-      .from(stores)
-      .where(inArray(stores.id, storeIds));
+      .from(branches)
+      .innerJoin(vendors, eq(branches.vendorId, vendors.id))
+      .where(inArray(branches.id, branchIds));
 
     return NextResponse.json({
       results,
-      stores: selectedStores,
+      branches: selectedBranches,
       totalProducts: results.length,
     });
   } catch (error) {

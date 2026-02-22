@@ -5,7 +5,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import {
   users,
-  stores,
+  vendors,
+  branches,
   products,
   storeProducts,
   categories,
@@ -104,37 +105,61 @@ export async function GET() {
     };
   }
 
-  // ── 4. Store stats ───────────────────────────────────────────────────────
-  let storeStats: Record<string, unknown> = {};
+  // ── 4. Vendor stats ───────────────────────────────────────────────────────
+  let vendorStats: Record<string, unknown> = {};
   try {
-    const [totalResult] = await db.select({ value: count() }).from(stores);
+    const [totalResult] = await db.select({ value: count() }).from(vendors);
     const [approvedResult] = await db
       .select({ value: count() })
-      .from(stores)
-      .where(eq(stores.approved, true));
+      .from(vendors)
+      .where(eq(vendors.approved, true));
     const [pendingResult] = await db
       .select({ value: count() })
-      .from(stores)
-      .where(eq(stores.approved, false));
+      .from(vendors)
+      .where(eq(vendors.approved, false));
     const [withBannersResult] = await db
       .select({ value: count() })
-      .from(stores)
-      .where(sql`${stores.bannerUrl} IS NOT NULL`);
-    const [marqueeResult] = await db
-      .select({ value: count() })
-      .from(stores)
-      .where(eq(stores.showInMarquee, true));
+      .from(vendors)
+      .where(sql`${vendors.bannerUrl} IS NOT NULL`);
 
-    storeStats = {
+    vendorStats = {
       total: totalResult.value,
       approved: approvedResult.value,
       pending: pendingResult.value,
       withBanners: withBannersResult.value,
+    };
+  } catch (error) {
+    vendorStats = {
+      error: error instanceof Error ? error.message : "Failed to fetch vendor stats",
+    };
+  }
+
+  // ── 4b. Branch stats ──────────────────────────────────────────────────────
+  let branchStats: Record<string, unknown> = {};
+  try {
+    const [totalResult] = await db.select({ value: count() }).from(branches);
+    const [approvedResult] = await db
+      .select({ value: count() })
+      .from(branches)
+      .where(eq(branches.approved, true));
+    const [pendingResult] = await db
+      .select({ value: count() })
+      .from(branches)
+      .where(eq(branches.approved, false));
+    const [marqueeResult] = await db
+      .select({ value: count() })
+      .from(branches)
+      .where(eq(branches.showInMarquee, true));
+
+    branchStats = {
+      total: totalResult.value,
+      approved: approvedResult.value,
+      pending: pendingResult.value,
       inMarquee: marqueeResult.value,
     };
   } catch (error) {
-    storeStats = {
-      error: error instanceof Error ? error.message : "Failed to fetch store stats",
+    branchStats = {
+      error: error instanceof Error ? error.message : "Failed to fetch branch stats",
     };
   }
 
@@ -261,7 +286,8 @@ export async function GET() {
     database,
     r2Storage,
     userStats,
-    storeStats,
+    vendorStats,
+    branchStats,
     productStats,
     contentStats,
     systemInfo,

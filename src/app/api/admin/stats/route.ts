@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { users, stores, products, searchLogs } from "@/db/schema";
+import { users, vendors, branches, products, searchLogs } from "@/db/schema";
 import { sql, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
@@ -13,16 +13,27 @@ export async function GET() {
   }
 
   try {
-    const [[userCount], [storeCount], [pendingCount], [productCount]] =
-      await Promise.all([
-        db.select({ count: sql<number>`count(*)` }).from(users),
-        db.select({ count: sql<number>`count(*)` }).from(stores),
-        db
-          .select({ count: sql<number>`count(*)` })
-          .from(stores)
-          .where(eq(stores.approved, false)),
-        db.select({ count: sql<number>`count(*)` }).from(products),
-      ]);
+    const [
+      [userCount],
+      [vendorCount],
+      [branchCount],
+      [pendingVendorCount],
+      [pendingBranchCount],
+      [productCount],
+    ] = await Promise.all([
+      db.select({ count: sql<number>`count(*)` }).from(users),
+      db.select({ count: sql<number>`count(*)` }).from(vendors),
+      db.select({ count: sql<number>`count(*)` }).from(branches),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(vendors)
+        .where(eq(vendors.approved, false)),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(branches)
+        .where(eq(branches.approved, false)),
+      db.select({ count: sql<number>`count(*)` }).from(products),
+    ]);
 
     // Top searches
     const topSearches = await db
@@ -37,8 +48,10 @@ export async function GET() {
 
     return NextResponse.json({
       totalUsers: Number(userCount.count),
-      totalStores: Number(storeCount.count),
-      pendingStores: Number(pendingCount.count),
+      totalVendors: Number(vendorCount.count),
+      totalBranches: Number(branchCount.count),
+      pendingVendors: Number(pendingVendorCount.count),
+      pendingBranches: Number(pendingBranchCount.count),
       totalProducts: Number(productCount.count),
       topSearches: topSearches.map((s) => ({
         query: s.query,

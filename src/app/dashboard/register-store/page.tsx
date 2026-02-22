@@ -15,15 +15,18 @@ export default function RegisterStorePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
+    // Vendor-level fields
     name: "",
     description: "",
-    region: "",
-    city: "",
-    whatsappNumber: "",
-    address: "",
     websiteUrl: "",
     logoUrl: "",
     bannerUrl: "",
+    // First branch fields
+    branchName: "",
+    region: "",
+    town: "",
+    whatsappNumber: "",
+    address: "",
   });
 
   const regionNames = Object.keys(NAMIBIA_REGIONS);
@@ -34,20 +37,32 @@ export default function RegisterStorePage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/stores", {
+      const res = await fetch("/api/vendors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name,
+          description: form.description,
+          websiteUrl: form.websiteUrl,
+          logoUrl: form.logoUrl,
+          bannerUrl: form.bannerUrl,
+          // First branch data
+          branchName: form.branchName || form.town || form.name,
+          region: form.region,
+          town: form.town,
+          address: form.address,
+          whatsappNumber: form.whatsappNumber,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Failed to register store");
+        toast.error(data.error || "Failed to register");
         return;
       }
 
-      toast.success("Store registered! Pending admin approval.");
+      toast.success("Vendor registered! Pending admin approval.");
       router.push("/dashboard");
       router.refresh();
     } catch {
@@ -64,25 +79,25 @@ export default function RegisterStorePage() {
           <div className="flex items-center gap-3">
             <Store className="h-6 w-6 text-primary" />
             <div>
-              <CardTitle>Register Your Store</CardTitle>
+              <CardTitle>Register Your Business</CardTitle>
               <CardDescription>
-                Fill in your store details. Admin will review and approve.
+                Fill in your business details and first branch location. Admin will review and approve.
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Info */}
+            {/* Vendor Info */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">
-                Basic Information
+                Business Information
               </h3>
               <div className="space-y-2">
-                <Label htmlFor="name">Store Name *</Label>
+                <Label htmlFor="name">Business Name *</Label>
                 <Input
                   id="name"
-                  placeholder="My Grocery Store"
+                  placeholder="e.g. Woermann Brock"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
@@ -92,9 +107,25 @@ export default function RegisterStorePage() {
                 <Label htmlFor="description">Description</Label>
                 <Input
                   id="description"
-                  placeholder="Brief description of your store"
+                  placeholder="Brief description of your business"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* First Branch */}
+            <div className="space-y-4 pt-2 border-t border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">
+                First Branch Location
+              </h3>
+              <div className="space-y-2">
+                <Label htmlFor="branchName">Branch Name</Label>
+                <Input
+                  id="branchName"
+                  placeholder="e.g. Windhoek CBD (leave empty to use town name)"
+                  value={form.branchName}
+                  onChange={(e) => setForm({ ...form, branchName: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -104,7 +135,7 @@ export default function RegisterStorePage() {
                     id="region"
                     value={form.region}
                     onChange={(e) =>
-                      setForm({ ...form, region: e.target.value, city: "" })
+                      setForm({ ...form, region: e.target.value, town: "" })
                     }
                     required
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -118,12 +149,12 @@ export default function RegisterStorePage() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="city">City / Town *</Label>
+                  <Label htmlFor="town">City / Town *</Label>
                   <select
-                    id="city"
-                    value={form.city}
+                    id="town"
+                    value={form.town}
                     onChange={(e) =>
-                      setForm({ ...form, city: e.target.value })
+                      setForm({ ...form, town: e.target.value })
                     }
                     required
                     disabled={!form.region}
@@ -147,7 +178,7 @@ export default function RegisterStorePage() {
                 </Label>
                 <Input
                   id="address"
-                  placeholder="Store address"
+                  placeholder="Branch street address"
                   value={form.address}
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
                 />
@@ -179,7 +210,7 @@ export default function RegisterStorePage() {
                   </Label>
                   <Input
                     id="website"
-                    placeholder="https://yourstore.com"
+                    placeholder="yourstore.com"
                     value={form.websiteUrl}
                     onChange={(e) => setForm({ ...form, websiteUrl: e.target.value })}
                   />
@@ -193,14 +224,14 @@ export default function RegisterStorePage() {
                 Branding
               </h3>
               <div className="space-y-2">
-                <Label>Store Logo</Label>
+                <Label>Business Logo</Label>
                 <ImageUpload
                   value={form.logoUrl || undefined}
                   onChange={(url) => setForm({ ...form, logoUrl: url })}
                   onRemove={() => setForm({ ...form, logoUrl: "" })}
-                  folder="stores/logos"
+                  folder="vendors/logos"
                   aspectRatio="square"
-                  label="Upload Store Logo"
+                  label="Upload Logo"
                   className="max-w-[200px]"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -208,14 +239,14 @@ export default function RegisterStorePage() {
                 </p>
               </div>
               <div className="space-y-2">
-                <Label>Store Banner</Label>
+                <Label>Business Banner</Label>
                 <ImageUpload
                   value={form.bannerUrl || undefined}
                   onChange={(url) => setForm({ ...form, bannerUrl: url })}
                   onRemove={() => setForm({ ...form, bannerUrl: "" })}
-                  folder="stores/banners"
+                  folder="vendors/banners"
                   aspectRatio="banner"
-                  label="Upload Store Banner"
+                  label="Upload Banner"
                 />
                 <p className="text-xs text-muted-foreground">
                   Recommended size: 1200x400px
@@ -224,7 +255,7 @@ export default function RegisterStorePage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Registering..." : "Register Store"}
+              {loading ? "Registering..." : "Register Business"}
             </Button>
           </form>
         </CardContent>

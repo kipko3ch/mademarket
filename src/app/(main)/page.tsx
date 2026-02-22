@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { heroBanners, stores, products, storeProducts, categories, featuredProducts, productClicks, bundles, searchLogs } from "@/db/schema";
+import { heroBanners, vendors, branches, stores, products, storeProducts, categories, featuredProducts, productClicks, bundles, searchLogs } from "@/db/schema";
 import { eq, sql, asc, desc, and, gte } from "drizzle-orm";
 import { HomeClient } from "@/components/home-client";
 
@@ -11,7 +11,7 @@ export default async function HomePage() {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   // Parallel server-side data fetching — all at once, zero waterfall
-  const [banners, marqueeStores, productRows, featuredRows, popularRows, bundleRows] = await Promise.all([
+  const [banners, marqueeBranches, productRows, featuredRows, popularRows, bundleRows] = await Promise.all([
     // 1. Hero banners
     db
       .select()
@@ -20,23 +20,34 @@ export default async function HomePage() {
       .orderBy(asc(heroBanners.sortOrder))
       .catch(() => []),
 
-    // 2. Stores for marquee — admin-controlled via showInMarquee
+    // 2. Branches for marquee — join branches → vendors
     db
       .select({
-        id: stores.id,
-        name: stores.name,
-        slug: stores.slug,
-        logoUrl: stores.logoUrl,
-        description: stores.description,
-        region: stores.region,
-        city: stores.city,
+        id: branches.id,
+        vendorName: vendors.name,
+        vendorSlug: vendors.slug,
+        vendorLogoUrl: vendors.logoUrl,
+        vendorDescription: vendors.description,
+        branchName: branches.branchName,
+        branchSlug: branches.slug,
+        branchTown: branches.town,
+        branchRegion: branches.region,
         productCount: sql<number>`count(${storeProducts.id})`.as("product_count"),
       })
-      .from(stores)
-      .leftJoin(storeProducts, eq(stores.id, storeProducts.storeId))
-      .where(and(eq(stores.approved, true), eq(stores.suspended, false), eq(stores.showInMarquee, true)))
-      .groupBy(stores.id)
-      .orderBy(asc(stores.marqueeOrder))
+      .from(branches)
+      .innerJoin(vendors, eq(branches.vendorId, vendors.id))
+      .leftJoin(storeProducts, eq(branches.id, storeProducts.branchId))
+      .where(
+        and(
+          eq(vendors.approved, true),
+          eq(vendors.active, true),
+          eq(branches.approved, true),
+          eq(branches.active, true),
+          eq(branches.showInMarquee, true)
+        )
+      )
+      .groupBy(branches.id, vendors.name, vendors.slug, vendors.logoUrl, vendors.description, branches.branchName, branches.slug, branches.town, branches.region)
+      .orderBy(asc(branches.marqueeOrder))
       .catch(() => []),
 
     // 3. Products with prices (general listing)
@@ -51,7 +62,7 @@ export default async function HomePage() {
         categoryName: categories.name,
         minPrice: sql<number>`min(${storeProducts.price})`.as("min_price"),
         maxPrice: sql<number>`max(${storeProducts.price})`.as("max_price"),
-        storeCount: sql<number>`count(distinct ${storeProducts.storeId})`.as("store_count"),
+        storeCount: sql<number>`count(distinct ${storeProducts.branchId})`.as("store_count"),
       })
       .from(products)
       .leftJoin(storeProducts, eq(products.id, storeProducts.productId))
@@ -72,7 +83,7 @@ export default async function HomePage() {
         categoryName: categories.name,
         minPrice: sql<number>`min(${storeProducts.price})`.as("min_price"),
         maxPrice: sql<number>`max(${storeProducts.price})`.as("max_price"),
-        storeCount: sql<number>`count(distinct ${storeProducts.storeId})`.as("store_count"),
+        storeCount: sql<number>`count(distinct ${storeProducts.branchId})`.as("store_count"),
         priority: featuredProducts.priority,
       })
       .from(featuredProducts)
@@ -102,7 +113,7 @@ export default async function HomePage() {
         categoryName: categories.name,
         minPrice: sql<number>`min(${storeProducts.price})`.as("min_price"),
         maxPrice: sql<number>`max(${storeProducts.price})`.as("max_price"),
-        storeCount: sql<number>`count(distinct ${storeProducts.storeId})`.as("store_count"),
+        storeCount: sql<number>`count(distinct ${storeProducts.branchId})`.as("store_count"),
         clickCount: sql<number>`count(${productClicks.id})`.as("click_count"),
       })
       .from(productClicks)
@@ -115,7 +126,7 @@ export default async function HomePage() {
       .limit(10)
       .catch(() => []),
 
-    // 6. Active bundles
+    // 6. Active bundles — join branches → vendors instead of stores
     db
       .select({
         id: bundles.id,
@@ -126,44 +137,56 @@ export default async function HomePage() {
         price: bundles.price,
         externalUrl: bundles.externalUrl,
         items: bundles.items,
-        storeId: bundles.storeId,
-        storeName: stores.name,
-        storeLogoUrl: stores.logoUrl,
+        branchId: bundles.branchId,
+        vendorName: vendors.name,
+        vendorLogoUrl: vendors.logoUrl,
+        vendorSlug: vendors.slug,
       })
       .from(bundles)
-      .innerJoin(stores, eq(bundles.storeId, stores.id))
+      .innerJoin(branches, eq(bundles.branchId, branches.id))
+      .innerJoin(vendors, eq(branches.vendorId, vendors.id))
       .where(eq(bundles.active, true))
       .orderBy(desc(bundles.createdAt))
       .limit(8)
       .catch(() => []),
   ]);
 
-  // Fallback: if no marquee stores configured, show all approved stores with products
-  let displayStores = marqueeStores;
-  if (marqueeStores.length === 0) {
-    displayStores = await db
+  // Fallback: if no marquee branches configured, show all approved active branches with products
+  let displayBranches = marqueeBranches;
+  if (marqueeBranches.length === 0) {
+    displayBranches = await db
       .select({
-        id: stores.id,
-        name: stores.name,
-        slug: stores.slug,
-        logoUrl: stores.logoUrl,
-        description: stores.description,
-        region: stores.region,
-        city: stores.city,
+        id: branches.id,
+        vendorName: vendors.name,
+        vendorSlug: vendors.slug,
+        vendorLogoUrl: vendors.logoUrl,
+        vendorDescription: vendors.description,
+        branchName: branches.branchName,
+        branchSlug: branches.slug,
+        branchTown: branches.town,
+        branchRegion: branches.region,
         productCount: sql<number>`count(${storeProducts.id})`.as("product_count"),
       })
-      .from(stores)
-      .leftJoin(storeProducts, eq(stores.id, storeProducts.storeId))
-      .where(and(eq(stores.approved, true), eq(stores.suspended, false)))
-      .groupBy(stores.id)
-      .orderBy(asc(stores.name))
+      .from(branches)
+      .innerJoin(vendors, eq(branches.vendorId, vendors.id))
+      .leftJoin(storeProducts, eq(branches.id, storeProducts.branchId))
+      .where(
+        and(
+          eq(vendors.approved, true),
+          eq(vendors.active, true),
+          eq(branches.approved, true),
+          eq(branches.active, true)
+        )
+      )
+      .groupBy(branches.id, vendors.name, vendors.slug, vendors.logoUrl, vendors.description, branches.branchName, branches.slug, branches.town, branches.region)
+      .orderBy(asc(vendors.name))
       .catch(() => []);
   }
 
   return (
     <HomeClient
       banners={banners}
-      stores={displayStores}
+      stores={displayBranches}
       products={productRows}
       featuredProducts={featuredRows}
       popularProducts={popularRows}

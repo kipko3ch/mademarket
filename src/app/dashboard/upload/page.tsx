@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet, CheckCircle2, XCircle, Download } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, XCircle, Download, MapPin } from "lucide-react";
+import { useBranch } from "@/hooks/use-branch";
 
 interface UploadResult {
   total: number;
@@ -17,34 +18,43 @@ interface UploadResult {
 }
 
 export default function BulkUploadPage() {
-  const [storeId, setStoreId] = useState<string | null>(null);
+  const { vendor, branches, fetchVendorData, loading: branchLoading } = useBranch();
+
+  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<UploadResult | null>(null);
 
   useEffect(() => {
-    async function fetchStoreId() {
-      try {
-        const res = await fetch("/api/dashboard/overview");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.store) setStoreId(data.store.id);
-        }
-      } catch {}
+    fetchVendorData();
+  }, [fetchVendorData]);
+
+  function toggleBranch(branchId: string) {
+    setSelectedBranchIds((prev) =>
+      prev.includes(branchId)
+        ? prev.filter((id) => id !== branchId)
+        : [...prev, branchId]
+    );
+  }
+
+  function selectAllBranches() {
+    if (selectedBranchIds.length === branches.length) {
+      setSelectedBranchIds([]);
+    } else {
+      setSelectedBranchIds(branches.map((b) => b.id));
     }
-    fetchStoreId();
-  }, []);
+  }
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
-    if (!file || !storeId) return;
+    if (!file || selectedBranchIds.length === 0) return;
     setUploading(true);
     setResult(null);
 
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("storeId", storeId);
+      formData.append("branchIds", selectedBranchIds.join(","));
 
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -67,6 +77,10 @@ export default function BulkUploadPage() {
       setUploading(false);
     }
   }
+
+  const selectedBranchNames = branches
+    .filter((b) => selectedBranchIds.includes(b.id))
+    .map((b) => b.branchName);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -102,6 +116,92 @@ export default function BulkUploadPage() {
         </CardContent>
       </Card>
 
+      {/* Branch Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            Select Branches
+          </CardTitle>
+          <CardDescription>
+            Choose which branches to upload products to. Products will be added to all selected branches.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {branchLoading ? (
+            <div className="h-20 bg-muted rounded-lg animate-pulse" />
+          ) : branches.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              No branches found. Please set up branches first.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {/* Select all toggle */}
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <span className="text-sm font-medium text-slate-700">
+                  {selectedBranchIds.length} of {branches.length} selected
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                  onClick={selectAllBranches}
+                >
+                  {selectedBranchIds.length === branches.length ? "Deselect All" : "Select All"}
+                </Button>
+              </div>
+
+              {/* Branch checkboxes */}
+              <div className="space-y-2">
+                {branches.map((branch) => (
+                  <label
+                    key={branch.id}
+                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                      selectedBranchIds.includes(branch.id)
+                        ? "border-blue-200 bg-blue-50"
+                        : "border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedBranchIds.includes(branch.id)}
+                      onChange={() => toggleBranch(branch.id)}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-900">{branch.branchName}</p>
+                      <p className="text-xs text-slate-500">
+                        {branch.town || "No town"}{branch.region ? ` · ${branch.region}` : ""}
+                      </p>
+                    </div>
+                    {branch.approved ? (
+                      <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">Active</Badge>
+                    ) : (
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-[10px]">Pending</Badge>
+                    )}
+                  </label>
+                ))}
+              </div>
+
+              {/* Selected summary */}
+              {selectedBranchNames.length > 0 && (
+                <div className="bg-blue-50 rounded-lg p-3">
+                  <p className="text-xs font-medium text-blue-800 mb-1">Uploading to:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedBranchNames.map((name) => (
+                      <Badge key={name} variant="secondary" className="bg-blue-100 text-blue-700 text-[10px]">
+                        {name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Upload form */}
       <Card>
         <CardHeader>
@@ -122,9 +222,17 @@ export default function BulkUploadPage() {
               />
               <p className="text-xs text-muted-foreground">Max 500 rows per file</p>
             </div>
-            <Button type="submit" disabled={uploading || !file || !storeId} className="w-full">
+            <Button
+              type="submit"
+              disabled={uploading || !file || selectedBranchIds.length === 0}
+              className="w-full"
+            >
               <Upload className="h-4 w-4 mr-2" />
-              {uploading ? "Uploading..." : "Upload & Process"}
+              {uploading
+                ? "Uploading..."
+                : selectedBranchIds.length === 0
+                ? "Select branches first"
+                : `Upload to ${selectedBranchIds.length} ${selectedBranchIds.length === 1 ? "branch" : "branches"}`}
             </Button>
           </form>
         </CardContent>

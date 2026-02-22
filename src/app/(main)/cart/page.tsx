@@ -60,7 +60,7 @@ export default function CartPage() {
         </div>
         <h1 className="text-2xl font-black text-slate-900 mb-2">Your cart is empty</h1>
         <p className="text-slate-500 mb-6 text-sm">
-          Add products to see which store gives you the best deal
+          Add products to see which branch gives you the best deal
         </p>
         <Link href="/products">
           <button className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-primary/20">
@@ -72,9 +72,11 @@ export default function CartPage() {
   }
 
   /* ── Data ──────────────────────────────────────── */
-  const fullStores = calculation?.stores?.filter((s) => s.hasAllItems) || [];
-  const partialStores = calculation?.stores?.filter((s) => !s.hasAllItems) || [];
-  const cheapestStore = fullStores.length > 0 ? fullStores[0] : calculation?.stores?.[0] || null;
+  const branches = calculation?.branches || [];
+  const fullBranches = branches.filter((b) => b.hasAllItems);
+  const partialBranches = branches.filter((b) => !b.hasAllItems);
+  const cheapestBranch = fullBranches.length > 0 ? fullBranches[0] : branches[0] || null;
+  const cheapestBranchId = calculation?.cheapestBranchId;
 
   return (
     <div className="max-w-7xl mx-auto w-full px-4 md:px-10 py-4 sm:py-8">
@@ -83,14 +85,17 @@ export default function CartPage() {
         <div>
           <h1 className="font-heading text-xl sm:text-3xl text-slate-900">Smart Cart</h1>
           <p className="text-slate-500 mt-0.5 text-xs sm:text-sm">
-            {items.length} {items.length === 1 ? "item" : "items"} — comparing across stores
+            {items.length} {items.length === 1 ? "item" : "items"} — comparing across branches
           </p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          {cheapestStore && (
+          {cheapestBranch && (
             <button
               onClick={() => {
-                const link = generateWhatsAppLink("", generateCartMessage(cheapestStore.storeName, cheapestStore.items, cheapestStore.total));
+                const branchLabel = cheapestBranch.vendorName
+                  ? `${cheapestBranch.vendorName}${cheapestBranch.town ? ` \u2013 ${cheapestBranch.town}` : ""}`
+                  : cheapestBranch.branchName;
+                const link = generateWhatsAppLink("", generateCartMessage(branchLabel, cheapestBranch.items, cheapestBranch.total));
                 window.open(link, "_blank");
               }}
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#25D366] text-white rounded-xl font-bold text-xs sm:text-sm hover:opacity-90 transition-opacity"
@@ -115,13 +120,17 @@ export default function CartPage() {
         <div className="lg:col-span-7 space-y-5">
 
           {/* Best Deal Alert */}
-          {calculation && fullStores.length > 0 && calculation.maxSavings > 0 && cheapestStore && (
+          {calculation && fullBranches.length > 0 && calculation.maxSavings > 0 && cheapestBranch && (
             <div className="bg-green-50 border border-green-200 p-3 sm:p-4 rounded-xl flex items-start gap-3">
               <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold text-green-800 text-xs sm:text-sm">Best Deal Found</p>
                 <p className="text-[11px] sm:text-xs text-green-700 mt-0.5">
-                  <strong>{cheapestStore.storeName}</strong> has all {items.length} items for the lowest total.
+                  <strong>
+                    {cheapestBranch.vendorName
+                      ? `${cheapestBranch.vendorName}${cheapestBranch.town ? ` \u2013 ${cheapestBranch.town}` : ""}`
+                      : cheapestBranch.branchName}
+                  </strong> has all {items.length} items for the lowest total.
                   {" "}Save <strong>{formatCurrency(calculation.maxSavings)}</strong> vs. most expensive.
                 </p>
               </div>
@@ -129,9 +138,9 @@ export default function CartPage() {
           )}
 
           {/* No full coverage notice */}
-          {calculation && fullStores.length === 0 && partialStores.length > 0 && (
+          {calculation && fullBranches.length === 0 && partialBranches.length > 0 && (
             <p className="text-xs text-slate-400 italic">
-              No single store carries all your items — results are sorted by coverage.
+              No single branch carries all your items — results are sorted by coverage.
             </p>
           )}
 
@@ -182,12 +191,12 @@ export default function CartPage() {
           </div>
         </div>
 
-        {/* ═══ RIGHT: Store Comparison ═══════════════ */}
+        {/* ═══ RIGHT: Branch Comparison ═══════════════ */}
         <div className="lg:col-span-5 space-y-4">
           <div className="lg:sticky lg:top-24 space-y-4">
 
             <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wider">
-              Store Comparison
+              Branch Comparison
             </h2>
 
             {loading ? (
@@ -198,15 +207,21 @@ export default function CartPage() {
                   <div className="h-4 bg-slate-100 rounded w-1/2" />
                 </div>
               </div>
-            ) : calculation && calculation.stores.length > 0 ? (
+            ) : calculation && branches.length > 0 ? (
               <div className="space-y-3">
-                {/* Store Cards */}
-                {calculation.stores.map((store, idx) => {
-                  const isCheapest = store.storeId === calculation.cheapestStoreId;
+                {/* Branch Cards */}
+                {branches.map((branch) => {
+                  const branchId = branch.branchId;
+                  const isCheapest = branchId === cheapestBranchId;
+                  const displayName = branch.vendorName
+                    ? `${branch.vendorName}${branch.town ? ` \u2013 ${branch.town}` : ""}`
+                    : branch.branchName;
+                  const logoUrl = branch.vendorLogoUrl;
+                  const vendorSlug = branch.vendorSlug;
 
                   return (
                     <div
-                      key={store.storeId}
+                      key={branchId}
                       className={cn(
                         "rounded-xl border p-4 transition-all",
                         isCheapest
@@ -214,25 +229,25 @@ export default function CartPage() {
                           : "bg-white border-slate-200"
                       )}
                     >
-                      {/* Store Header */}
+                      {/* Branch Header */}
                       <div className="flex items-center gap-3 mb-3">
                         <div className={cn(
                           "h-10 w-10 rounded-lg overflow-hidden shrink-0 flex items-center justify-center",
                           isCheapest ? "bg-primary/5 border border-primary/20" : "bg-slate-50 border border-slate-100"
                         )}>
-                          <StoreLogo src={store.storeLogoUrl} name={store.storeName} size="sm" />
+                          <StoreLogo src={logoUrl} name={displayName} size="sm" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-sm text-slate-900 truncate">{store.storeName}</h3>
+                          <h3 className="font-bold text-sm text-slate-900 truncate">{displayName}</h3>
                           <div className="flex items-center gap-1.5 mt-0.5">
-                            {store.hasAllItems ? (
+                            {branch.hasAllItems ? (
                               <span className="text-[10px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
                                 <CheckCircle2 className="h-2.5 w-2.5" />
                                 All items
                               </span>
                             ) : (
                               <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md">
-                                {store.itemCount}/{store.totalItems} items
+                                {branch.itemCount}/{branch.totalItems} items
                               </span>
                             )}
                             {isCheapest && (
@@ -248,36 +263,37 @@ export default function CartPage() {
                             "text-lg font-black",
                             isCheapest ? "text-primary" : "text-slate-900"
                           )}>
-                            {formatCurrency(store.total)}
+                            {formatCurrency(branch.total)}
                           </p>
-                          {!store.hasAllItems && (
-                            <p className="text-[9px] text-slate-400">for {store.itemCount} items</p>
+                          {!branch.hasAllItems && (
+                            <p className="text-[9px] text-slate-400">for {branch.itemCount} items</p>
                           )}
                         </div>
                       </div>
 
                       {/* Item list preview */}
                       <div className="text-[11px] text-slate-500 space-y-0.5 mb-3">
-                        {store.items.slice(0, 2).map((it) => (
+                        {branch.items.slice(0, 2).map((it) => (
                           <div key={it.productId} className="flex justify-between">
                             <span className="truncate mr-3">{it.productName} ×{it.quantity}</span>
                             <span className="font-medium text-slate-700 shrink-0">{formatCurrency(it.price)}</span>
                           </div>
                         ))}
-                        {store.items.length > 2 && (
-                          <p className="text-slate-400">+{store.items.length - 2} more items</p>
+                        {branch.items.length > 2 && (
+                          <p className="text-slate-400">+{branch.items.length - 2} more items</p>
                         )}
                       </div>
 
                       {/* Action */}
                       <button
                         onClick={() => {
-                          if (store.storeWebsiteUrl) {
-                            window.open(store.storeWebsiteUrl, "_blank");
+                          if (branch.vendorWebsiteUrl) {
+                            window.open(branch.vendorWebsiteUrl, "_blank");
                           } else {
+                            const whatsapp = branch.branchWhatsapp || "";
                             const link = generateWhatsAppLink(
-                              store.storeWhatsapp || "",
-                              generateCartMessage(store.storeName, store.items, store.total)
+                              whatsapp,
+                              generateCartMessage(displayName, branch.items, branch.total)
                             );
                             window.open(link, "_blank");
                           }
@@ -290,14 +306,14 @@ export default function CartPage() {
                         )}
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
-                        {isCheapest ? "Shop at" : "Go to"} {store.storeName}
+                        {isCheapest ? "Shop at" : "Go to"} {branch.vendorName || branch.branchName}
                       </button>
                     </div>
                   );
                 })}
 
                 {/* Savings chip */}
-                {calculation.maxSavings > 0 && fullStores.length >= 2 && (
+                {calculation.maxSavings > 0 && fullBranches.length >= 2 && (
                   <div className="text-center">
                     <span className="inline-block bg-green-100 text-green-700 text-[11px] font-bold px-3 py-1 rounded-full">
                       You save {formatCurrency(calculation.maxSavings)} vs. most expensive option
@@ -306,11 +322,14 @@ export default function CartPage() {
                 )}
 
                 {/* WhatsApp */}
-                {cheapestStore && (
+                {cheapestBranch && (
                   <button
                     className="w-full border border-slate-200 text-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
                     onClick={() => {
-                      const link = generateWhatsAppLink("", generateCartMessage(cheapestStore.storeName, cheapestStore.items, cheapestStore.total));
+                      const branchLabel = cheapestBranch.vendorName
+                        ? `${cheapestBranch.vendorName}${cheapestBranch.town ? ` \u2013 ${cheapestBranch.town}` : ""}`
+                        : cheapestBranch.branchName;
+                      const link = generateWhatsAppLink("", generateCartMessage(branchLabel, cheapestBranch.items, cheapestBranch.total));
                       window.open(link, "_blank");
                     }}
                   >
@@ -319,16 +338,16 @@ export default function CartPage() {
                   </button>
                 )}
 
-                {/* Multi-store note */}
-                {calculation.stores.length > 1 && (
+                {/* Multi-branch note */}
+                {branches.length > 1 && (
                   <p className="text-[10px] text-slate-400 text-center leading-relaxed">
-                    Prices may vary. Each button takes you to the store&apos;s site.
+                    Prices may vary. Each button takes you to the vendor&apos;s site.
                   </p>
                 )}
               </div>
             ) : (
               <div className="bg-white rounded-xl border border-slate-200 p-5 text-center text-slate-400 text-sm">
-                <p>No store prices found for your items</p>
+                <p>No branch prices found for your items</p>
               </div>
             )}
           </div>

@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { brochures, stores } from "@/db/schema";
+import { vendors, branches, brochures } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
@@ -18,7 +18,45 @@ const updateBrochureSchema = z.object({
   validUntil: z.string().optional().nullable(),
 });
 
-// PATCH /api/dashboard/brochures/[id] — Update brochure (verify ownership)
+/** Helper: verify that a brochure belongs to one of the vendor's branches */
+async function getVendorAndVerifyBrochure(userId: string, brochureId: string) {
+  const [vendor] = await db
+    .select({ id: vendors.id })
+    .from(vendors)
+    .where(eq(vendors.ownerId, userId))
+    .limit(1);
+
+  if (!vendor) return { vendor: null, brochure: null };
+
+  // Get all branch IDs for this vendor
+  const vendorBranches = await db
+    .select({ id: branches.id })
+    .from(branches)
+    .where(eq(branches.vendorId, vendor.id));
+
+  const vendorBranchIds = vendorBranches.map((b) => b.id);
+
+  if (vendorBranchIds.length === 0) return { vendor, brochure: null };
+
+  // Find the brochure and verify it belongs to one of vendor's branches
+  const [brochure] = await db
+    .select()
+    .from(brochures)
+    .where(eq(brochures.id, brochureId))
+    .limit(1);
+
+  if (
+    !brochure ||
+    !brochure.branchId ||
+    !vendorBranchIds.includes(brochure.branchId)
+  ) {
+    return { vendor, brochure: null };
+  }
+
+  return { vendor, brochure };
+}
+
+// PATCH /api/dashboard/brochures/[id] — Update brochure (verify ownership via branch)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -35,15 +73,20 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Find vendor's store
-    const [store] = await db
-      .select()
-      .from(stores)
-      .where(eq(stores.ownerId, session.user.id))
-      .limit(1);
+    const { vendor, brochure } = await getVendorAndVerifyBrochure(
+      session.user.id,
+      id
+    );
 
-    if (!store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    if (!vendor) {
+      return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
+    }
+
+    if (!brochure) {
+      return NextResponse.json(
+        { error: "Brochure not found or not owned by you" },
+        { status: 404 }
+      );
     }
 
     const body = await request.json();
@@ -103,17 +146,16 @@ export async function PATCH(
       );
     }
 
-    // Verify ownership: brochure.storeId must match vendor's store
     const [updated] = await db
       .update(brochures)
       .set(updates)
-      .where(and(eq(brochures.id, id), eq(brochures.storeId, store.id)))
+      .where(eq(brochures.id, id))
       .returning();
 
     if (!updated) {
       return NextResponse.json(
-        { error: "Brochure not found or not owned by you" },
-        { status: 404 }
+        { error: "Failed to update brochure" },
+        { status: 500 }
       );
     }
 
@@ -127,7 +169,7 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/dashboard/brochures/[id] — Delete brochure (verify ownership)
+// DELETE /api/dashboard/brochures/[id] — Delete brochure (verify ownership via branch)
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -144,29 +186,23 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Find vendor's store
-    const [store] = await db
-      .select()
-      .from(stores)
-      .where(eq(stores.ownerId, session.user.id))
-      .limit(1);
+    const { vendor, brochure } = await getVendorAndVerifyBrochure(
+      session.user.id,
+      id
+    );
 
-    if (!store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    if (!vendor) {
+      return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
     }
 
-    // Verify ownership and delete
-    const [deleted] = await db
-      .delete(brochures)
-      .where(and(eq(brochures.id, id), eq(brochures.storeId, store.id)))
-      .returning();
-
-    if (!deleted) {
+    if (!brochure) {
       return NextResponse.json(
         { error: "Brochure not found or not owned by you" },
         { status: 404 }
       );
     }
+
+    await db.delete(brochures).where(eq(brochures.id, id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

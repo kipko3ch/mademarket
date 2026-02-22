@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { sponsoredListings, stores, products } from "@/db/schema";
+import { sponsoredListings, vendors, products } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
@@ -16,7 +16,9 @@ export async function GET() {
     const listings = await db
       .select({
         id: sponsoredListings.id,
-        storeName: stores.name,
+        vendorName: vendors.name,
+        vendorSlug: vendors.slug,
+        vendorLogoUrl: vendors.logoUrl,
         productName: products.name,
         startDate: sponsoredListings.startDate,
         endDate: sponsoredListings.endDate,
@@ -25,7 +27,7 @@ export async function GET() {
         active: sponsoredListings.active,
       })
       .from(sponsoredListings)
-      .innerJoin(stores, eq(sponsoredListings.storeId, stores.id))
+      .innerJoin(vendors, eq(sponsoredListings.vendorId, vendors.id))
       .innerJoin(products, eq(sponsoredListings.productId, products.id))
       .orderBy(desc(sponsoredListings.createdAt));
 

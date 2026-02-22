@@ -25,12 +25,16 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-interface StorePrice {
-  storeId: string;
-  storeName: string;
-  storeLogo: string | null;
-  storeAddress: string | null;
-  storeWebsite: string | null;
+interface BranchPrice {
+  branchId: string;
+  branchName: string;
+  branchTown: string | null;
+  vendorId: string;
+  vendorName: string;
+  vendorSlug: string;
+  branchSlug: string;
+  vendorLogoUrl: string | null;
+  vendorWebsiteUrl: string | null;
   price: number;
   inStock: boolean;
   externalUrl: string | null;
@@ -65,7 +69,7 @@ export default function ProductDetailPage({
 }) {
   const { id } = use(params);
   const [product, setProduct] = useState<ProductDetail | null>(null);
-  const [storePrices, setStorePrices] = useState<StorePrice[]>([]);
+  const [branchPrices, setBranchPrices] = useState<BranchPrice[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [alertSet, setAlertSet] = useState(false);
@@ -87,7 +91,7 @@ export default function ProductDetailPage({
         const data = await res.json();
 
         setProduct(data.product);
-        setStorePrices(data.prices);
+        setBranchPrices(data.prices);
 
         // Update recently viewed
         if (typeof window !== "undefined" && data.product) {
@@ -156,8 +160,8 @@ export default function ProductDetailPage({
     );
   }
 
-  const cheapestPrice = storePrices.length > 0 ? storePrices[0].price : null;
-  const mostExpensive = storePrices.length > 1 ? storePrices[storePrices.length - 1].price : null;
+  const cheapestPrice = branchPrices.length > 0 ? branchPrices[0].price : null;
+  const mostExpensive = branchPrices.length > 1 ? branchPrices[branchPrices.length - 1].price : null;
 
   return (
     <div className="mx-auto max-w-5xl px-4 md:px-8 py-6">
@@ -270,35 +274,38 @@ export default function ProductDetailPage({
       <section className="mt-8 sm:mt-12">
         <h2 className="font-heading text-lg sm:text-xl text-slate-900 mb-1">Where To Buy</h2>
         <p className="text-xs text-slate-400 mb-4">
-          {storePrices.length > 0
-            ? `Available at ${storePrices.length} ${storePrices.length === 1 ? "store" : "stores"} — sorted by lowest price`
-            : "No stores currently stock this product"}
+          {branchPrices.length > 0
+            ? `Available at ${branchPrices.length} ${branchPrices.length === 1 ? "branch" : "branches"} \u2014 sorted by lowest price`
+            : "No branches currently stock this product"}
         </p>
 
         <div className="space-y-2">
-          {storePrices.map((sp, idx) => {
-            const isCheapest = idx === 0 && storePrices.length > 1;
-            const savings = cheapestPrice && sp.price > cheapestPrice ? sp.price - cheapestPrice : 0;
-            const redirectUrl = sp.externalUrl || sp.storeWebsite;
+          {branchPrices.map((bp, idx) => {
+            const isCheapest = idx === 0 && branchPrices.length > 1;
+            const savings = cheapestPrice && bp.price > cheapestPrice ? bp.price - cheapestPrice : 0;
+            const redirectUrl = bp.externalUrl || bp.vendorWebsiteUrl;
+            const displayName = bp.branchTown
+              ? `${bp.vendorName} \u2013 ${bp.branchTown}`
+              : bp.vendorName;
 
             return (
               <div
-                key={sp.storeId}
+                key={bp.branchId}
                 className={cn(
                   "flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border bg-white transition-all",
                   isCheapest ? "border-green-200 bg-green-50/30" : "border-slate-200 hover:border-slate-300"
                 )}
               >
-                {/* Store Logo */}
-                <Link href={`/store/${sp.storeId}`} className="shrink-0">
-                  <StoreLogo src={sp.storeLogo} name={sp.storeName} size="md" />
+                {/* Vendor Logo */}
+                <Link href={`/store/${bp.vendorSlug}`} className="shrink-0">
+                  <StoreLogo src={bp.vendorLogoUrl} name={bp.vendorName} size="md" />
                 </Link>
 
-                {/* Store Info */}
+                {/* Vendor/Branch Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Link href={`/store/${sp.storeId}`} className="font-bold text-sm text-slate-900 hover:text-primary transition-colors">
-                      {sp.storeName}
+                    <Link href={`/store/${bp.vendorSlug}`} className="font-bold text-sm text-slate-900 hover:text-primary transition-colors">
+                      {displayName}
                     </Link>
                     {isCheapest && (
                       <span className="text-[10px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
@@ -312,18 +319,18 @@ export default function ProductDetailPage({
                       </span>
                     )}
                   </div>
-                  {sp.storeAddress && (
-                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">{sp.storeAddress}</p>
+                  {bp.branchTown && bp.branchTown !== bp.vendorName && (
+                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">{bp.branchName}</p>
                   )}
                 </div>
 
                 {/* Price + Link */}
                 <div className="text-right shrink-0 flex flex-col items-end gap-1">
                   <p className={cn("text-lg font-black", isCheapest ? "text-green-700" : "text-slate-900")}>
-                    {formatCurrency(sp.price)}
+                    {formatCurrency(bp.price)}
                   </p>
-                  <p className={cn("text-[10px] font-medium", sp.inStock ? "text-green-600" : "text-red-500")}>
-                    {sp.inStock ? "In Stock" : "Out of Stock"}
+                  <p className={cn("text-[10px] font-medium", bp.inStock ? "text-green-600" : "text-red-500")}>
+                    {bp.inStock ? "In Stock" : "Out of Stock"}
                   </p>
                   {redirectUrl && (
                     <a
@@ -341,19 +348,19 @@ export default function ProductDetailPage({
             );
           })}
 
-          {storePrices.length === 0 && (
+          {branchPrices.length === 0 && (
             <div className="text-center py-8 text-slate-400">
               <Store className="h-8 w-8 mx-auto mb-2" />
-              <p className="text-sm">No stores currently sell this product</p>
+              <p className="text-sm">No branches currently sell this product</p>
             </div>
           )}
         </div>
 
         {/* Savings summary */}
-        {storePrices.length > 1 && cheapestPrice && mostExpensive && mostExpensive > cheapestPrice && (
+        {branchPrices.length > 1 && cheapestPrice && mostExpensive && mostExpensive > cheapestPrice && (
           <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-xl">
             <p className="text-sm font-medium text-green-800">
-              Cheapest at <strong>{storePrices[0].storeName}</strong> — Save {formatCurrency(mostExpensive - cheapestPrice)} vs most expensive
+              Cheapest at <strong>{branchPrices[0].vendorName}{branchPrices[0].branchTown ? ` \u2013 ${branchPrices[0].branchTown}` : ""}</strong> — Save {formatCurrency(mostExpensive - cheapestPrice)} vs most expensive
             </p>
           </div>
         )}
@@ -420,7 +427,7 @@ export default function ProductDetailPage({
                 <div className="p-3">
                   <h4 className="text-xs sm:text-sm font-semibold text-slate-900 line-clamp-2 leading-snug mb-1">{rp.name}</h4>
                   {rp.storeCount > 0 && (
-                    <p className="text-[10px] text-slate-400 mb-1">{rp.storeCount} {rp.storeCount === 1 ? "store" : "stores"}</p>
+                    <p className="text-[10px] text-slate-400 mb-1">{rp.storeCount} {rp.storeCount === 1 ? "branch" : "branches"}</p>
                   )}
                   {rp.minPrice && (
                     <p className="text-sm font-black text-primary">{formatCurrency(rp.minPrice)}</p>

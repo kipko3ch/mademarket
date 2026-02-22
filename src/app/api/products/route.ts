@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { products, storeProducts, stores, categories, searchLogs, sponsoredListings } from "@/db/schema";
-import { eq, ilike, and, gte, lte, sql, desc, asc, or } from "drizzle-orm";
+import { products, storeProducts, vendors, branches, categories, searchLogs, sponsoredListings } from "@/db/schema";
+import { eq, ilike, and, gte, lte, sql, desc, asc, or, isNotNull } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { normalizeProductName, extractProductMeta, slugify } from "@/lib/utils";
@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
   const pageSize = Math.min(50, parseInt(url.get("pageSize") || "20"));
   const search = url.get("search") || "";
   const category = url.get("category") || "";
-  const storeId = url.get("storeId") || "";
+  const vendorId = url.get("vendorId") || "";
+  const branchId = url.get("branchId") || "";
   const minPrice = url.get("minPrice") || "";
   const maxPrice = url.get("maxPrice") || "";
   const sortBy = url.get("sortBy") || "name"; // name | price_asc | price_desc
@@ -63,8 +64,10 @@ export async function GET(req: NextRequest) {
       .select({
         productId: sponsoredListings.productId,
         priorityLevel: sponsoredListings.priorityLevel,
-        storeName: stores.name,
-        storeId: stores.id,
+        vendorName: vendors.name,
+        vendorId: vendors.id,
+        vendorSlug: vendors.slug,
+        vendorLogoUrl: vendors.logoUrl,
         price: storeProducts.price,
         productName: products.name,
         productImage: products.imageUrl,
@@ -72,12 +75,22 @@ export async function GET(req: NextRequest) {
       })
       .from(sponsoredListings)
       .innerJoin(products, eq(sponsoredListings.productId, products.id))
-      .innerJoin(stores, eq(sponsoredListings.storeId, stores.id))
+      .innerJoin(vendors, and(
+        eq(sponsoredListings.vendorId, vendors.id),
+        eq(vendors.approved, true),
+        eq(vendors.active, true)
+      ))
+      .innerJoin(branches, and(
+        eq(branches.vendorId, vendors.id),
+        eq(branches.approved, true),
+        eq(branches.active, true)
+      ))
       .innerJoin(
         storeProducts,
         and(
-          eq(storeProducts.storeId, sponsoredListings.storeId),
-          eq(storeProducts.productId, sponsoredListings.productId)
+          eq(storeProducts.branchId, branches.id),
+          eq(storeProducts.productId, sponsoredListings.productId),
+          isNotNull(storeProducts.branchId)
         )
       )
       .leftJoin(categories, eq(products.categoryId, categories.id))
@@ -92,12 +105,16 @@ export async function GET(req: NextRequest) {
       .orderBy(desc(sponsoredListings.priorityLevel))
       .limit(3);
 
-    // Build join condition for store_products
-    const storeJoinCondition = storeId
-      ? and(eq(products.id, storeProducts.productId), eq(storeProducts.storeId, storeId))
-      : eq(products.id, storeProducts.productId);
+    // Build join condition for store_products → branches → vendors
+    const branchJoinConditions = [
+      eq(products.id, storeProducts.productId),
+      isNotNull(storeProducts.branchId),
+    ];
+    if (branchId) {
+      branchJoinConditions.push(eq(storeProducts.branchId, branchId));
+    }
 
-    // Main query: products with min price across stores
+    // Main query: products with min price across branches
     const selectFields = {
       id: products.id,
       name: products.name,
@@ -108,17 +125,26 @@ export async function GET(req: NextRequest) {
       categoryName: categories.name,
       minPrice: sql<number>`min(${storeProducts.price})`.as("min_price"),
       maxPrice: sql<number>`max(${storeProducts.price})`.as("max_price"),
-      storeCount: sql<number>`count(distinct ${storeProducts.storeId})`.as("store_count"),
+      branchCount: sql<number>`count(distinct ${storeProducts.branchId})`.as("branch_count"),
     };
 
     const groupByFields = [products.id, products.name, products.normalizedName, products.imageUrl, products.unit, products.categoryId, categories.name] as const;
 
+    // Build the full where clause including vendorId filter
+    const fullWhereConditions = whereClause ? [whereClause] : [];
+    if (vendorId) {
+      fullWhereConditions.push(eq(vendors.id, vendorId));
+    }
+    const fullWhere = fullWhereConditions.length > 0 ? and(...fullWhereConditions) : undefined;
+
     const productResults = await db
       .select(selectFields)
       .from(products)
-      .leftJoin(storeProducts, storeJoinCondition)
+      .leftJoin(storeProducts, and(...branchJoinConditions))
       .leftJoin(categories, eq(products.categoryId, categories.id))
-      .where(whereClause)
+      .leftJoin(branches, eq(storeProducts.branchId, branches.id))
+      .leftJoin(vendors, eq(branches.vendorId, vendors.id))
+      .where(fullWhere)
       .groupBy(...groupByFields)
       .limit(pageSize)
       .offset(offset);
@@ -176,21 +202,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check store approval (skip for admins)
+  // Check vendor approval (skip for admins)
   if (session.user.role === "vendor") {
-    const [store] = await db
-      .select({ id: stores.id, approved: stores.approved })
-      .from(stores)
-      .where(eq(stores.ownerId, session.user.id))
+    const [vendor] = await db
+      .select({ id: vendors.id, approved: vendors.approved })
+      .from(vendors)
+      .where(eq(vendors.ownerId, session.user.id))
       .limit(1);
 
-    if (!store) {
-      return NextResponse.json({ error: "No store found" }, { status: 404 });
+    if (!vendor) {
+      return NextResponse.json({ error: "No vendor found" }, { status: 404 });
     }
 
-    if (!store.approved) {
+    if (!vendor.approved) {
       return NextResponse.json(
-        { error: "Store must be approved before you can perform this action. Contact admin: +264818222368" },
+        { error: "Vendor must be approved before you can perform this action. Contact admin: +264818222368" },
         { status: 403 }
       );
     }

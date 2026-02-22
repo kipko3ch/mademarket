@@ -10,27 +10,29 @@ import { cn, productUrl } from "@/lib/utils";
 import Link from "next/link";
 import { toast } from "sonner";
 
-interface StoreOption {
+interface BranchOption {
   id: string;
-  name: string;
-  logoUrl: string | null;
-  productCount: number;
+  vendorName: string;
+  branchTown: string | null;
+  vendorSlug: string;
+  branchSlug: string;
+  vendorLogoUrl: string | null;
 }
 
 type SortMode = "name" | "savings";
 
 export default function ComparePage() {
-  const [availableStores, setAvailableStores] = useState<StoreOption[]>([]);
+  const [availableBranches, setAvailableBranches] = useState<BranchOption[]>([]);
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("savings");
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [addedProducts, setAddedProducts] = useState<Set<string>>(new Set());
   const {
-    selectedStoreIds,
+    selectedBranchIds,
     results,
-    stores: comparedStores,
+    branches: comparedBranches,
     loading,
-    toggleStore,
+    toggleBranch,
     compare,
   } = useCompare();
   const { addItem } = useCart();
@@ -71,20 +73,49 @@ export default function ComparePage() {
   }
 
   useEffect(() => {
-    fetch("/api/stores")
+    fetch("/api/vendors")
       .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setAvailableStores(data); })
+      .then((data) => {
+        // API returns vendors with their branches - flatten to branch list
+        const allBranches: BranchOption[] = [];
+        const vendorList = Array.isArray(data) ? data : data.vendors || [];
+        for (const vendor of vendorList) {
+          if (vendor.branches && Array.isArray(vendor.branches)) {
+            for (const branch of vendor.branches) {
+              allBranches.push({
+                id: branch.id,
+                vendorName: vendor.name,
+                branchTown: branch.town || null,
+                vendorSlug: vendor.slug,
+                branchSlug: branch.slug,
+                vendorLogoUrl: vendor.logoUrl || null,
+              });
+            }
+          } else {
+            // Fallback: vendor without branches array — treat vendor itself as an option
+            allBranches.push({
+              id: vendor.id,
+              vendorName: vendor.name,
+              branchTown: null,
+              vendorSlug: vendor.slug,
+              branchSlug: vendor.slug,
+              vendorLogoUrl: vendor.logoUrl || null,
+            });
+          }
+        }
+        setAvailableBranches(allBranches);
+      })
       .catch(() => { });
   }, []);
 
   useEffect(() => {
-    if (selectedStoreIds.length >= 2) {
+    if (selectedBranchIds.length >= 2) {
       compare(undefined, search || undefined);
     }
-  }, [selectedStoreIds.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedBranchIds.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSearch() {
-    if (selectedStoreIds.length >= 2) {
+    if (selectedBranchIds.length >= 2) {
       compare(undefined, search || undefined);
     }
   }
@@ -97,6 +128,13 @@ export default function ComparePage() {
     }
     return a.productName.localeCompare(b.productName);
   });
+
+  /** Display name for a branch: "Vendor – Town" */
+  function branchDisplayName(branch: BranchOption) {
+    return branch.branchTown
+      ? `${branch.vendorName} \u2013 ${branch.branchTown}`
+      : branch.vendorName;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-10 py-4 sm:py-8">
@@ -115,42 +153,42 @@ export default function ComparePage() {
             </div>
           </div>
 
-          {/* Store selection */}
+          {/* Branch selection */}
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
             <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
               <ArrowRightLeft className="h-4 w-4 text-primary" />
-              Retailer
+              Branches
             </h3>
             <div className="space-y-3">
-              {availableStores.map((store) => {
-                const isSelected = selectedStoreIds.includes(store.id);
+              {availableBranches.map((branch) => {
+                const isSelected = selectedBranchIds.includes(branch.id);
                 return (
-                  <label key={store.id} className="flex items-center gap-3 cursor-pointer group">
+                  <label key={branch.id} className="flex items-center gap-3 cursor-pointer group">
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      onChange={() => toggleStore(store.id)}
+                      onChange={() => toggleBranch(branch.id)}
                       className="rounded border-slate-300 text-primary focus:ring-primary"
                     />
                     <span className="text-sm text-slate-600 group-hover:text-primary">
-                      {store.name}
+                      {branchDisplayName(branch)}
                     </span>
                   </label>
                 );
               })}
             </div>
-            {availableStores.length === 0 && (
-              <p className="text-sm text-slate-400 py-4 text-center">No stores available</p>
+            {availableBranches.length === 0 && (
+              <p className="text-sm text-slate-400 py-4 text-center">No branches available</p>
             )}
-            {selectedStoreIds.length > 0 && selectedStoreIds.length < 2 && (
+            {selectedBranchIds.length > 0 && selectedBranchIds.length < 2 && (
               <p className="text-xs text-amber-600 mt-3 font-medium">
-                Select at least one more store
+                Select at least one more branch
               </p>
             )}
           </div>
 
           {/* Product search */}
-          {selectedStoreIds.length >= 2 && (
+          {selectedBranchIds.length >= 2 && (
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
               <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
                 <Search className="h-4 w-4 text-primary" />
@@ -192,7 +230,7 @@ export default function ComparePage() {
                   onClick={() => setSortMode(sortMode === "savings" ? "name" : "savings")}
                 >
                   <ArrowUpDown className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                  {sortMode === "savings" ? "Biggest savings" : "A–Z"}
+                  {sortMode === "savings" ? "Biggest savings" : "A\u2013Z"}
                 </button>
                 <button
                   onClick={addSelectedToCart}
@@ -228,14 +266,16 @@ export default function ComparePage() {
                       <th className="p-4 font-heading text-xs uppercase tracking-wider text-slate-400 min-w-[240px]">
                         Product Details
                       </th>
-                      {comparedStores.map((store) => (
-                        <th key={store.id} className="p-4 text-center min-w-[140px]">
-                          <Link href={`/store/${store.id}`} className="flex flex-col items-center gap-1 hover:opacity-100 transition-all">
+                      {comparedBranches.map((branch) => (
+                        <th key={branch.id} className="p-4 text-center min-w-[140px]">
+                          <Link href={`/store/${branch.vendorSlug}`} className="flex flex-col items-center gap-1 hover:opacity-100 transition-all">
                             <div className="h-8 w-24 flex items-center justify-center grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all">
-                              <StoreLogo src={store.logoUrl} name={store.name} size="sm" />
+                              <StoreLogo src={branch.vendorLogoUrl} name={branch.vendorName} size="sm" />
                             </div>
                             <span className="text-[10px] font-bold text-slate-400 uppercase">
-                              {store.name}
+                              {branch.branchTown
+                                ? `${branch.vendorName} \u2013 ${branch.branchTown}`
+                                : branch.vendorName}
                             </span>
                           </Link>
                         </th>
@@ -267,11 +307,11 @@ export default function ComparePage() {
                               </div>
                             </Link>
                           </td>
-                          {comparedStores.map((store) => {
-                            const priceEntry = prices.find((p) => p.storeId === store.id);
+                          {comparedBranches.map((branch) => {
+                            const priceEntry = prices.find((p) => p.branchId === branch.id);
                             const isBest = priceEntry && priceEntry.price === minP;
                             return (
-                              <td key={store.id} className="p-4 text-center">
+                              <td key={branch.id} className="p-4 text-center">
                                 {priceEntry ? (
                                   <div className="flex flex-col items-center gap-1">
                                     <span className={cn(
@@ -337,22 +377,25 @@ export default function ComparePage() {
                     Total Cart Estimate (Selected Items)
                   </h4>
                   <div className="flex gap-8">
-                    {comparedStores.map((store) => {
+                    {comparedBranches.map((branch) => {
                       const total = sortedResults.reduce((sum, result) => {
-                        const pe = result.prices.find((p) => p.storeId === store.id);
+                        const pe = result.prices.find((p) => p.branchId === branch.id);
                         return sum + (pe?.price || 0);
                       }, 0);
-                      const allTotals = comparedStores.map((s) =>
+                      const allTotals = comparedBranches.map((b) =>
                         sortedResults.reduce((sum, r) => {
-                          const pe = r.prices.find((p) => p.storeId === s.id);
+                          const pe = r.prices.find((p) => p.branchId === b.id);
                           return sum + (pe?.price || 0);
                         }, 0)
                       );
                       const isCheapest = total <= Math.min(...allTotals);
+                      const displayName = branch.branchTown
+                        ? `${branch.vendorName} \u2013 ${branch.branchTown}`
+                        : branch.vendorName;
                       return (
-                        <div key={store.id}>
+                        <div key={branch.id}>
                           <p className={cn("text-[10px] font-bold uppercase", isCheapest ? "text-primary" : "text-slate-400")}>
-                            {store.name}
+                            {displayName}
                           </p>
                           <p className={cn("text-xl font-bold", isCheapest && "text-primary")}>
                             {formatCurrency(total)}
@@ -365,7 +408,7 @@ export default function ComparePage() {
                 <div className="flex items-center gap-4">
                   <span className="text-xs text-slate-500 italic">Prices updated in real-time</span>
                   <button className="bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded font-bold text-sm transition-colors border border-primary/20">
-                    Compare More Stores
+                    Compare More Branches
                   </button>
                 </div>
               </div>
@@ -418,14 +461,17 @@ export default function ComparePage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      {comparedStores.map((store) => {
-                        const priceEntry = prices.find((p) => p.storeId === store.id);
+                      {comparedBranches.map((branch) => {
+                        const priceEntry = prices.find((p) => p.branchId === branch.id);
                         const isBest = priceEntry && priceEntry.price === minP;
+                        const displayName = branch.branchTown
+                          ? `${branch.vendorName} \u2013 ${branch.branchTown}`
+                          : branch.vendorName;
                         return (
-                          <div key={store.id} className="flex items-center justify-between text-sm">
+                          <div key={branch.id} className="flex items-center justify-between text-sm">
                             <div className="flex items-center gap-2">
-                              <StoreLogo src={store.logoUrl} name={store.name} size="xs" />
-                              <span className="text-xs text-slate-500">{store.name}</span>
+                              <StoreLogo src={branch.vendorLogoUrl} name={branch.vendorName} size="xs" />
+                              <span className="text-xs text-slate-500">{displayName}</span>
                             </div>
                             {priceEntry ? (
                               <div className="flex items-center gap-1.5">
@@ -452,24 +498,24 @@ export default function ComparePage() {
           )}
 
           {/* Empty states */}
-          {!loading && selectedStoreIds.length < 2 && results.length === 0 && (
+          {!loading && selectedBranchIds.length < 2 && results.length === 0 && (
             <div className="text-center py-10 sm:py-16">
               <div className="h-14 w-14 sm:h-20 sm:w-20 rounded-2xl bg-primary/5 flex items-center justify-center mx-auto mb-3 sm:mb-4 p-3 sm:p-5">
                 <img src="/icons/compare.png" alt="Compare" className="max-h-full max-w-full object-contain" />
               </div>
-              <p className="text-sm sm:text-lg font-bold text-slate-900">Select at least 2 stores to compare</p>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1">Compare up to 3 stores at once to find the best deals</p>
+              <p className="text-sm sm:text-lg font-bold text-slate-900">Select at least 2 branches to compare</p>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">Compare up to 3 branches at once to find the best deals</p>
             </div>
           )}
 
-          {!loading && selectedStoreIds.length >= 2 && results.length === 0 && (
+          {!loading && selectedBranchIds.length >= 2 && results.length === 0 && (
             <div className="text-center py-10 sm:py-16">
               <div className="h-14 w-14 sm:h-20 sm:w-20 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3 sm:mb-4">
                 <ArrowRightLeft className="h-8 w-8 text-slate-300" />
               </div>
               <p className="text-sm sm:text-lg font-bold text-slate-900">No shared products found</p>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-md mx-auto">
-                These stores do not currently stock any of the same core products.
+                These branches do not currently stock any of the same core products.
                 {search && " Try broadening your search or clearing the filter."}
               </p>
               <p className="text-xs text-slate-400 mt-3">

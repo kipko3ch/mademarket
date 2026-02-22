@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Megaphone, Plus } from "lucide-react";
+import { Megaphone, Plus, Package } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,8 +22,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useBranch } from "@/hooks/use-branch";
 
-interface StoreProduct {
+interface BranchProduct {
   id: string;
   productId: string;
   productName: string;
@@ -31,10 +32,12 @@ interface StoreProduct {
 }
 
 export default function VendorSponsoredPage() {
-  const [storeId, setStoreId] = useState<string | null>(null);
-  const [products, setProducts] = useState<StoreProduct[]>([]);
+  const { vendor, branches, selectedBranchId, fetchVendorData, loading: branchLoading } = useBranch();
+
+  const [products, setProducts] = useState<BranchProduct[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     productId: "",
     startDate: "",
@@ -42,26 +45,34 @@ export default function VendorSponsoredPage() {
     priorityLevel: "1",
   });
 
+  // Fetch vendor data on mount
   useEffect(() => {
-    async function fetchData() {
+    fetchVendorData();
+  }, [fetchVendorData]);
+
+  // Fetch products for the selected branch
+  useEffect(() => {
+    async function fetchProducts() {
+      if (!selectedBranchId) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
       try {
-        const overviewRes = await fetch("/api/dashboard/overview");
-        if (overviewRes.ok) {
-          const overview = await overviewRes.json();
-          if (overview.store) {
-            setStoreId(overview.store.id);
-            const prodRes = await fetch(`/api/stores/${overview.store.id}/products`);
-            if (prodRes.ok) setProducts(await prodRes.json());
-          }
-        }
-      } catch { }
+        const prodRes = await fetch(`/api/stores/${selectedBranchId}/products`);
+        if (prodRes.ok) setProducts(await prodRes.json());
+      } catch {} finally {
+        setLoading(false);
+      }
     }
-    fetchData();
-  }, []);
+    fetchProducts();
+  }, [selectedBranchId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!storeId) return;
+    if (!vendor) return;
     setSubmitting(true);
 
     try {
@@ -69,7 +80,7 @@ export default function VendorSponsoredPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          storeId,
+          vendorId: vendor.id,
           productId: form.productId,
           startDate: form.startDate,
           endDate: form.endDate,
@@ -90,6 +101,19 @@ export default function VendorSponsoredPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (branchLoading || loading) {
+    return <div className="h-64 bg-muted rounded-lg animate-pulse" />;
+  }
+
+  if (!vendor) {
+    return (
+      <div className="text-center py-16">
+        <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+        <p className="text-lg">Register as a vendor first to manage sponsored ads</p>
+      </div>
+    );
   }
 
   return (
@@ -113,6 +137,13 @@ export default function VendorSponsoredPage() {
               <DialogTitle>Create Sponsored Listing</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {!selectedBranchId && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-xs text-amber-700">
+                    Select a branch from the sidebar to see its products.
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Product</Label>
                 <Select
@@ -120,7 +151,7 @@ export default function VendorSponsoredPage() {
                   onValueChange={(v) => setForm({ ...form, productId: v })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select product" />
+                    <SelectValue placeholder={products.length === 0 ? "No products available" : "Select product"} />
                   </SelectTrigger>
                   <SelectContent>
                     {products.map((p) => (
@@ -167,7 +198,7 @@ export default function VendorSponsoredPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full" disabled={submitting}>
+              <Button type="submit" className="w-full" disabled={submitting || !form.productId}>
                 {submitting ? "Submitting..." : "Submit for Approval"}
               </Button>
             </form>

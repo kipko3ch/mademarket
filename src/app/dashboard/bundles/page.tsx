@@ -15,11 +15,21 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, Package, ExternalLink } from "lucide-react";
+import { Plus, Edit2, Trash2, Package, ExternalLink, Search, X } from "lucide-react";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { useBranch } from "@/hooks/use-branch";
+
+interface BundleProduct {
+  productId: string;
+  quantity: number;
+  productName: string | null;
+  productSlug: string | null;
+  productImageUrl: string | null;
+}
 
 interface Bundle {
   id: string;
+  branchId: string;
   name: string;
   description: string | null;
   imageUrl: string | null;
@@ -28,6 +38,21 @@ interface Bundle {
   items: string | null;
   active: boolean;
   createdAt: string;
+  bundleProducts: BundleProduct[];
+}
+
+interface SearchProduct {
+  id: string;
+  name: string;
+  slug: string;
+  imageUrl: string | null;
+}
+
+interface SelectedProduct {
+  productId: string;
+  name: string;
+  imageUrl: string | null;
+  quantity: number;
 }
 
 const emptyForm = {
@@ -40,6 +65,8 @@ const emptyForm = {
 };
 
 export default function VendorBundlesPage() {
+  const { selectedBranchId } = useBranch();
+
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -48,9 +75,20 @@ export default function VendorBundlesPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
 
+  // Product selection for bundleProducts
+  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
+  const [productSearch, setProductSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchProduct[]>([]);
+  const [searching, setSearching] = useState(false);
+
   const fetchBundles = useCallback(async () => {
+    if (!selectedBranchId) {
+      setBundles([]);
+      setLoading(false);
+      return;
+    }
     try {
-      const res = await fetch("/api/dashboard/bundles");
+      const res = await fetch(`/api/dashboard/bundles?branchId=${selectedBranchId}`);
       if (res.ok) {
         setBundles(await res.json());
       }
@@ -59,15 +97,69 @@ export default function VendorBundlesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedBranchId]);
 
   useEffect(() => {
+    setLoading(true);
     fetchBundles();
   }, [fetchBundles]);
+
+  // Search products for bundle
+  async function searchProducts(query: string) {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const res = await fetch(`/api/products?search=${encodeURIComponent(query.trim())}&pageSize=8`);
+      if (res.ok) {
+        const data = await res.json();
+        const products: SearchProduct[] = (data.products || data || []).map(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (p: any) => ({
+            id: p.id,
+            name: p.name,
+            slug: p.slug,
+            imageUrl: p.imageUrl || null,
+          })
+        );
+        // Filter out already selected products
+        const selectedIds = new Set(selectedProducts.map((sp) => sp.productId));
+        setSearchResults(products.filter((p) => !selectedIds.has(p.id)));
+      }
+    } catch {
+      /* swallow */
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  function addProduct(product: SearchProduct) {
+    setSelectedProducts((prev) => [
+      ...prev,
+      { productId: product.id, name: product.name, imageUrl: product.imageUrl, quantity: 1 },
+    ]);
+    setSearchResults((prev) => prev.filter((p) => p.id !== product.id));
+    setProductSearch("");
+  }
+
+  function removeProduct(productId: string) {
+    setSelectedProducts((prev) => prev.filter((p) => p.productId !== productId));
+  }
+
+  function updateProductQuantity(productId: string, quantity: number) {
+    setSelectedProducts((prev) =>
+      prev.map((p) => (p.productId === productId ? { ...p, quantity: Math.max(1, quantity) } : p))
+    );
+  }
 
   function openCreateDialog() {
     setEditingId(null);
     setForm(emptyForm);
+    setSelectedProducts([]);
+    setProductSearch("");
+    setSearchResults([]);
     setDialogOpen(true);
   }
 
@@ -81,21 +173,48 @@ export default function VendorBundlesPage() {
       externalUrl: bundle.externalUrl || "",
       items: bundle.items || "",
     });
+    // Populate selectedProducts from bundleProducts
+    setSelectedProducts(
+      (bundle.bundleProducts || []).map((bp) => ({
+        productId: bp.productId,
+        name: bp.productName || "Unknown Product",
+        imageUrl: bp.productImageUrl || null,
+        quantity: bp.quantity,
+      }))
+    );
+    setProductSearch("");
+    setSearchResults([]);
     setDialogOpen(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!selectedBranchId) {
+      toast.error("Please select a branch first");
+      return;
+    }
+
+    if (selectedProducts.length === 0) {
+      toast.error("Please add at least one product to the bundle");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       const payload = {
+        branchId: selectedBranchId,
         name: form.name,
         description: form.description,
         imageUrl: form.imageUrl,
         price: parseFloat(form.price),
         externalUrl: form.externalUrl,
         items: form.items,
+        products: selectedProducts.map((p) => ({
+          productId: p.productId,
+          quantity: p.quantity,
+        })),
       };
 
       let res: Response;
@@ -124,6 +243,7 @@ export default function VendorBundlesPage() {
       setDialogOpen(false);
       setForm(emptyForm);
       setEditingId(null);
+      setSelectedProducts([]);
       fetchBundles();
     } catch {
       toast.error("Something went wrong");
@@ -154,6 +274,17 @@ export default function VendorBundlesPage() {
     }
   }
 
+  if (!selectedBranchId) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">Bundles</h1>
+          <p className="text-muted-foreground">Please select a branch to manage bundles.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -182,6 +313,9 @@ export default function VendorBundlesPage() {
           if (!open) {
             setEditingId(null);
             setForm(emptyForm);
+            setSelectedProducts([]);
+            setProductSearch("");
+            setSearchResults([]);
           }
         }}>
           <DialogTrigger asChild>
@@ -249,8 +383,107 @@ export default function VendorBundlesPage() {
                   />
                 </div>
               </div>
+
+              {/* Bundle Products Selection */}
               <div className="space-y-2">
-                <Label htmlFor="bundle-items">Items (comma-separated)</Label>
+                <Label>Bundle Products *</Label>
+                <p className="text-xs text-muted-foreground">
+                  Search and add products to this bundle. At least one product is required.
+                </p>
+
+                {/* Search input */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder="Search products to add..."
+                    value={productSearch}
+                    onChange={(e) => {
+                      setProductSearch(e.target.value);
+                      searchProducts(e.target.value);
+                    }}
+                    className="pl-9"
+                  />
+                </div>
+
+                {/* Search results dropdown */}
+                {(searchResults.length > 0 || searching) && productSearch.trim() && (
+                  <div className="border border-slate-200 rounded-lg max-h-40 overflow-y-auto bg-white shadow-sm">
+                    {searching ? (
+                      <div className="p-3 text-sm text-slate-400 text-center">Searching...</div>
+                    ) : (
+                      searchResults.map((product) => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-50 transition-colors text-left"
+                          onClick={() => addProduct(product)}
+                        >
+                          {product.imageUrl ? (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="h-8 w-8 rounded object-cover bg-slate-100"
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded bg-slate-100 flex items-center justify-center">
+                              <Package className="h-4 w-4 text-slate-300" />
+                            </div>
+                          )}
+                          <span className="text-sm text-slate-700 truncate">{product.name}</span>
+                          <Plus className="h-4 w-4 text-slate-400 ml-auto shrink-0" />
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Selected products */}
+                {selectedProducts.length > 0 && (
+                  <div className="space-y-2 mt-2">
+                    {selectedProducts.map((sp) => (
+                      <div
+                        key={sp.productId}
+                        className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg border border-slate-100"
+                      >
+                        {sp.imageUrl ? (
+                          <img
+                            src={sp.imageUrl}
+                            alt={sp.name}
+                            className="h-8 w-8 rounded object-cover bg-slate-100"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded bg-slate-200 flex items-center justify-center">
+                            <Package className="h-4 w-4 text-slate-400" />
+                          </div>
+                        )}
+                        <span className="text-sm text-slate-700 flex-1 truncate">{sp.name}</span>
+                        <div className="flex items-center gap-1">
+                          <Label className="text-xs text-slate-500 sr-only">Qty</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={sp.quantity}
+                            onChange={(e) =>
+                              updateProductQuantity(sp.productId, parseInt(e.target.value) || 1)
+                            }
+                            className="w-16 h-7 text-xs text-center"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeProduct(sp.productId)}
+                          className="p-1 hover:bg-red-50 rounded transition-colors"
+                        >
+                          <X className="h-4 w-4 text-red-400" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bundle-items">Items Description (optional)</Label>
                 <Input
                   id="bundle-items"
                   placeholder="e.g., Milk, Bread, Eggs, Butter"
@@ -258,7 +491,7 @@ export default function VendorBundlesPage() {
                   onChange={(e) => setForm({ ...form, items: e.target.value })}
                 />
                 <p className="text-xs text-muted-foreground">
-                  List the items included in this bundle, separated by commas
+                  Optional comma-separated text description of items in this bundle
                 </p>
               </div>
               <Button
@@ -347,7 +580,19 @@ export default function VendorBundlesPage() {
                     </p>
                   )}
 
-                  {bundle.items && (
+                  {/* Bundle Products */}
+                  {bundle.bundleProducts && bundle.bundleProducts.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {bundle.bundleProducts.map((bp) => (
+                        <Badge key={bp.productId} variant="outline" className="text-xs font-normal text-slate-600">
+                          {bp.productName || "Product"}{bp.quantity > 1 ? ` x${bp.quantity}` : ""}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Legacy text items */}
+                  {bundle.items && (!bundle.bundleProducts || bundle.bundleProducts.length === 0) && (
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {bundle.items.split(",").map((item, idx) => (
                         <Badge key={idx} variant="outline" className="text-xs font-normal text-slate-600">

@@ -168,7 +168,7 @@ export function CartDrawer() {
                   <div className="h-4 bg-muted rounded w-3/4" />
                   <div className="h-8 bg-muted rounded" />
                 </div>
-              ) : calculation && calculation.stores.length > 0 ? (
+              ) : calculation && calculation.branches.length > 0 ? (
                 <>
                   {/* Savings banner */}
                   {calculation.maxSavings > 0 && (
@@ -186,12 +186,12 @@ export function CartDrawer() {
                   )}
 
                   {/* Per-store totals */}
-                  {calculation.stores.map((store) => {
+                  {calculation.branches.map((store) => {
                     const isCheapest =
-                      store.storeId === calculation.cheapestStoreId;
+                      store.branchId === calculation.cheapestBranchId;
                     return (
                       <div
-                        key={store.storeId}
+                        key={store.branchId}
                         className={cn(
                           "rounded-xl border p-3",
                           isCheapest && "border-primary bg-primary/5"
@@ -200,7 +200,7 @@ export function CartDrawer() {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm">
-                              {store.storeName}
+                              {store.vendorName || store.branchName}
                             </span>
                             {isCheapest && (
                               <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">
@@ -246,7 +246,7 @@ export function CartDrawer() {
                                 const link = generateWhatsAppLink(
                                   "",
                                   generateCartMessage(
-                                    store.storeName,
+                                    store.vendorName || store.branchName,
                                     store.items,
                                     store.total
                                   )

@@ -4,15 +4,17 @@ import { useEffect, useState } from "react";
 import {
   Store, Users, Package, Search, Diamond, Megaphone, ImagePlay,
   Activity, Database, HardDrive, CheckCircle2, AlertTriangle, XCircle,
-  ShieldCheck, UserCheck, Eye, Loader2,
+  ShieldCheck, UserCheck, Eye, Loader2, GitBranch,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 interface AdminStats {
   totalUsers: number;
-  totalStores: number;
-  pendingStores: number;
+  totalVendors: number;
+  totalBranches: number;
+  pendingVendors: number;
+  pendingBranches: number;
   totalProducts: number;
   topSearches: { query: string; count: number }[];
 }
@@ -28,7 +30,19 @@ interface HealthData {
     regularUsers: number;
     newUsersLast7Days: number;
   };
-  storeStats: {
+  vendorStats?: {
+    total: number;
+    approved: number;
+    pending: number;
+  };
+  branchStats?: {
+    total: number;
+    approved: number;
+    pending: number;
+    withBanners: number;
+    inMarquee: number;
+  };
+  storeStats?: {
     total: number;
     approved: number;
     pending: number;
@@ -86,8 +100,8 @@ export default function AdminPage() {
     return (
       <div className="space-y-6">
         <div className="h-8 w-48 bg-slate-200 rounded-lg animate-pulse" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="h-32 bg-slate-100 rounded-2xl animate-pulse" />
           ))}
         </div>
@@ -103,11 +117,18 @@ export default function AdminPage() {
       isPrimary: true,
     },
     {
-      label: "Total Stores",
-      value: stats?.totalStores ?? 0,
+      label: "Total Vendors",
+      value: stats?.totalVendors ?? 0,
       icon: Store,
       isPrimary: false,
-      sub: (stats?.pendingStores ?? 0) > 0 ? `${stats?.pendingStores} pending` : undefined,
+      sub: (stats?.pendingVendors ?? 0) > 0 ? `${stats?.pendingVendors} pending` : undefined,
+    },
+    {
+      label: "Total Branches",
+      value: stats?.totalBranches ?? 0,
+      icon: GitBranch,
+      isPrimary: false,
+      sub: (stats?.pendingBranches ?? 0) > 0 ? `${stats?.pendingBranches} pending` : undefined,
     },
     {
       label: "Products",
@@ -124,7 +145,7 @@ export default function AdminPage() {
   ];
 
   const quickActions = [
-    { label: "Manage Stores", href: "/admin/stores", icon: Store, desc: "Approve or reject stores" },
+    { label: "Manage Vendors", href: "/admin/stores", icon: Store, desc: "Approve or manage vendors & branches" },
     { label: "Featured Products", href: "/admin/featured", icon: Diamond, desc: "Control homepage featured" },
     { label: "Hero Banners", href: "/admin/banners", icon: ImagePlay, desc: "Edit homepage carousel" },
     { label: "Sponsored Ads", href: "/admin/sponsored", icon: Megaphone, desc: "Review ad listings" },
@@ -136,6 +157,10 @@ export default function AdminPage() {
       : <XCircle className="h-4 w-4 text-red-500" />;
   }
 
+  // Support both old storeStats and new vendorStats/branchStats from the health API
+  const vendorStatsData = health?.vendorStats;
+  const branchStatsData = health?.branchStats ?? health?.storeStats;
+
   return (
     <div className="space-y-6">
       <div className="mb-8">
@@ -144,8 +169,8 @@ export default function AdminPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {statCards.map((card, i) => {
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
+        {statCards.map((card) => {
           return (
             <div
               key={card.label}
@@ -294,29 +319,48 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Stores Breakdown */}
+              {/* Vendors & Branches Breakdown */}
               <div className="bg-white border border-slate-100 rounded-2xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Store className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm font-semibold text-slate-700">Stores</span>
+                  <span className="text-sm font-semibold text-slate-700">Vendors & Branches</span>
                 </div>
                 <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-500">Approved</span>
-                    <span className="font-bold text-green-600">{health.storeStats.approved}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-500">Pending</span>
-                    <span className="font-bold text-amber-600">{health.storeStats.pending}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-500">In Marquee</span>
-                    <span className="font-bold text-slate-700">{health.storeStats.inMarquee}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-500">With Banners</span>
-                    <span className="font-bold text-slate-700">{health.storeStats.withBanners}</span>
-                  </div>
+                  {vendorStatsData ? (
+                    <>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-500">Vendors Approved</span>
+                        <span className="font-bold text-green-600">{vendorStatsData.approved}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-500">Vendors Pending</span>
+                        <span className="font-bold text-amber-600">{vendorStatsData.pending}</span>
+                      </div>
+                    </>
+                  ) : null}
+                  {branchStatsData ? (
+                    <>
+                      <div className="flex justify-between text-xs border-t border-slate-50 pt-1.5 mt-1.5">
+                        <span className="text-slate-500">Branches Approved</span>
+                        <span className="font-bold text-green-600">{branchStatsData.approved}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-500">Branches Pending</span>
+                        <span className="font-bold text-amber-600">{branchStatsData.pending}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-500">In Marquee</span>
+                        <span className="font-bold text-slate-700">{branchStatsData.inMarquee}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-500">With Banners</span>
+                        <span className="font-bold text-slate-700">{branchStatsData.withBanners}</span>
+                      </div>
+                    </>
+                  ) : null}
+                  {!vendorStatsData && !branchStatsData && (
+                    <p className="text-xs text-slate-400">No data available</p>
+                  )}
                 </div>
               </div>
 

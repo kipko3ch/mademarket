@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { storeProducts, products, stores, priceHistory } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { storeProducts, products, branches, vendors, priceHistory } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// GET /api/stores/[id]/products — Get all products for a store (accepts UUID or slug)
+// GET /api/stores/[id]/products — Get all products for a branch (accepts UUID or slug)
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -20,17 +20,17 @@ export async function GET(
 
   try {
     // Resolve slug to UUID if needed
-    let storeId = id;
+    let branchId = id;
     if (!UUID_REGEX.test(id)) {
       const [found] = await db
-        .select({ id: stores.id })
-        .from(stores)
-        .where(eq(stores.slug, id))
+        .select({ id: branches.id })
+        .from(branches)
+        .where(eq(branches.slug, id))
         .limit(1);
       if (!found) {
         return NextResponse.json([], { status: 200 });
       }
-      storeId = found.id;
+      branchId = found.id;
     }
 
     const storeProductList = await db
@@ -49,7 +49,7 @@ export async function GET(
       })
       .from(storeProducts)
       .innerJoin(products, eq(storeProducts.productId, products.id))
-      .where(eq(storeProducts.storeId, storeId))
+      .where(eq(storeProducts.branchId, branchId))
       .orderBy(products.name);
 
     return NextResponse.json(storeProductList);
@@ -62,7 +62,7 @@ export async function GET(
   }
 }
 
-// POST /api/stores/[id]/products — Add or update product price for a store
+// POST /api/stores/[id]/products — Add or update product price for a branch
 const addProductSchema = z.object({
   productId: z.string().uuid(),
   price: z.number().positive("Price must be positive"),
@@ -74,28 +74,38 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: storeId } = await params;
+  const { id: branchId } = await params;
   const session = await auth();
 
   if (!session?.user || (session.user.role !== "vendor" && session.user.role !== "admin")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Verify store ownership and approval
+  // Verify branch ownership and vendor approval
   if (session.user.role === "vendor") {
-    const [store] = await db
-      .select({ ownerId: stores.ownerId, approved: stores.approved })
-      .from(stores)
-      .where(eq(stores.id, storeId))
+    const [branch] = await db
+      .select({ id: branches.id, vendorId: branches.vendorId })
+      .from(branches)
+      .where(eq(branches.id, branchId))
       .limit(1);
 
-    if (!store || store.ownerId !== session.user.id) {
+    if (!branch) {
+      return NextResponse.json({ error: "Branch not found" }, { status: 404 });
+    }
+
+    const [vendor] = await db
+      .select({ ownerId: vendors.ownerId, approved: vendors.approved })
+      .from(vendors)
+      .where(eq(vendors.id, branch.vendorId))
+      .limit(1);
+
+    if (!vendor || vendor.ownerId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (!store.approved) {
+    if (!vendor.approved) {
       return NextResponse.json(
-        { error: "Store must be approved before you can perform this action. Contact admin: +264818222368" },
+        { error: "Vendor must be approved before you can perform this action. Contact admin: +264818222368" },
         { status: 403 }
       );
     }
@@ -105,13 +115,13 @@ export async function POST(
     const body = await req.json();
     const validated = addProductSchema.parse(body);
 
-    // Check if store product exists (for price update)
+    // Check if branch product exists (for price update)
     const [existing] = await db
       .select({ id: storeProducts.id, price: storeProducts.price })
       .from(storeProducts)
       .where(
         and(
-          eq(storeProducts.storeId, storeId),
+          eq(storeProducts.branchId, branchId),
           eq(storeProducts.productId, validated.productId)
         )
       )
@@ -145,11 +155,11 @@ export async function POST(
       return NextResponse.json(updated);
     }
 
-    // Create new store product
+    // Create new branch product
     const [created] = await db
       .insert(storeProducts)
       .values({
-        storeId,
+        branchId,
         productId: validated.productId,
         price: String(validated.price),
         bundleInfo: validated.bundleInfo || null,

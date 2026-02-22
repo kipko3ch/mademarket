@@ -29,6 +29,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { useBranch } from "@/hooks/use-branch";
 
 interface StoreProduct {
   id: string;
@@ -58,9 +59,10 @@ interface ExistingProduct {
 }
 
 export default function DashboardProductsPage() {
+  const { vendor, branches, selectedBranchId, fetchVendorData, loading: branchLoading } = useBranch();
+
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [storeId, setStoreId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Add product state
@@ -187,18 +189,24 @@ export default function DashboardProductsPage() {
     }
   }
 
+  // Fetch vendor data on mount
   useEffect(() => {
-    async function fetchData() {
+    fetchVendorData();
+  }, [fetchVendorData]);
+
+  // Fetch products when selectedBranchId changes
+  useEffect(() => {
+    async function fetchProducts() {
+      if (!selectedBranchId) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
       try {
-        const overviewRes = await fetch("/api/dashboard/overview");
-        if (overviewRes.ok) {
-          const overview = await overviewRes.json();
-          if (overview.store) {
-            setStoreId(overview.store.id);
-            const prodRes = await fetch(`/api/stores/${overview.store.id}/products`);
-            if (prodRes.ok) setProducts(await prodRes.json());
-          }
-        }
+        const prodRes = await fetch(`/api/stores/${selectedBranchId}/products`);
+        if (prodRes.ok) setProducts(await prodRes.json());
 
         const catRes = await fetch("/api/categories");
         if (catRes.ok) setCategories(await catRes.json());
@@ -206,18 +214,18 @@ export default function DashboardProductsPage() {
         setLoading(false);
       }
     }
-    fetchData();
-  }, []);
+    fetchProducts();
+  }, [selectedBranchId]);
 
   async function refreshProducts() {
-    if (!storeId) return;
-    const prodRes = await fetch(`/api/stores/${storeId}/products`);
+    if (!selectedBranchId) return;
+    const prodRes = await fetch(`/api/stores/${selectedBranchId}/products`);
     if (prodRes.ok) setProducts(await prodRes.json());
   }
 
   async function handleAddProduct(e: React.FormEvent) {
     e.preventDefault();
-    if (!storeId) return;
+    if (!selectedBranchId) return;
     setSubmitting(true);
 
     try {
@@ -252,8 +260,8 @@ export default function DashboardProductsPage() {
         productId = product.id;
       }
 
-      // Set the price for this store
-      const priceRes = await fetch(`/api/stores/${storeId}/products`, {
+      // Set the price for this branch
+      const priceRes = await fetch(`/api/stores/${selectedBranchId}/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -269,7 +277,7 @@ export default function DashboardProductsPage() {
         return;
       }
 
-      toast.success(selectedExisting ? "Product linked to your store" : "Product added successfully");
+      toast.success(selectedExisting ? "Product linked to your branch" : "Product added successfully");
       setDialogOpen(false);
       resetAddDialog();
       await refreshProducts();
@@ -294,7 +302,7 @@ export default function DashboardProductsPage() {
 
   async function handleEditProduct(e: React.FormEvent) {
     e.preventDefault();
-    if (!editProduct || !storeId) return;
+    if (!editProduct || !selectedBranchId) return;
     setEditSubmitting(true);
 
     try {
@@ -315,8 +323,8 @@ export default function DashboardProductsPage() {
         return;
       }
 
-      // Update price for this store
-      const priceRes = await fetch(`/api/stores/${storeId}/products`, {
+      // Update price for this branch
+      const priceRes = await fetch(`/api/stores/${selectedBranchId}/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -362,9 +370,9 @@ export default function DashboardProductsPage() {
   }
 
   async function handleLinkProduct(targetProductId: string) {
-    if (!editProduct || !storeId) return;
+    if (!editProduct || !selectedBranchId) return;
     try {
-      const res = await fetch(`/api/stores/${storeId}/products/${editProduct.id}/link`, {
+      const res = await fetch(`/api/stores/${selectedBranchId}/products/${editProduct.id}/link`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: targetProductId }),
@@ -384,9 +392,9 @@ export default function DashboardProductsPage() {
   }
 
   async function handleUnlinkProduct() {
-    if (!editProduct || !storeId) return;
+    if (!editProduct || !selectedBranchId) return;
     try {
-      const res = await fetch(`/api/stores/${storeId}/products/${editProduct.id}/link`, {
+      const res = await fetch(`/api/stores/${selectedBranchId}/products/${editProduct.id}/link`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -402,25 +410,42 @@ export default function DashboardProductsPage() {
     }
   }
 
-  if (loading) {
+  if (loading || branchLoading) {
     return <div className="h-64 bg-muted rounded-lg animate-pulse" />;
   }
 
-  if (!storeId) {
+  if (!vendor) {
     return (
       <div className="text-center py-16">
         <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-        <p className="text-lg">Register a store first to manage products</p>
+        <p className="text-lg">Register as a vendor first to manage products</p>
       </div>
     );
   }
+
+  if (!selectedBranchId) {
+    return (
+      <div className="text-center py-16">
+        <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+        <p className="text-lg font-semibold">No Branch Selected</p>
+        <p className="text-muted-foreground mt-1">
+          Select a branch from the sidebar to manage its products.
+        </p>
+      </div>
+    );
+  }
+
+  const selectedBranch = branches.find((b) => b.id === selectedBranchId);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Products</h1>
-          <p className="text-muted-foreground">{products.length} products listed</p>
+          <p className="text-muted-foreground">
+            {products.length} products listed
+            {selectedBranch ? ` in ${selectedBranch.branchName}` : ""}
+          </p>
         </div>
 
         {/* Add Product Dialog */}
@@ -558,7 +583,7 @@ export default function DashboardProductsPage() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting ? "Adding..." : "Add to My Store"}
+                  {submitting ? "Adding..." : "Add to Branch"}
                 </Button>
               </form>
             )}

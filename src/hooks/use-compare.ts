@@ -3,50 +3,59 @@
 import { create } from "zustand";
 import type { CompareResult } from "@/types";
 
+interface BranchOption {
+  id: string;
+  vendorName: string;
+  branchTown: string | null;
+  vendorSlug: string;
+  branchSlug: string;
+  vendorLogoUrl: string | null;
+}
+
 interface CompareStore {
-  selectedStoreIds: string[];
+  selectedBranchIds: string[];
   results: CompareResult[];
-  stores: { id: string; name: string; logoUrl: string | null }[];
+  branches: BranchOption[];
   loading: boolean;
-  toggleStore: (storeId: string) => void;
+  toggleBranch: (branchId: string) => void;
   clearSelection: () => void;
   compare: (category?: string, search?: string) => Promise<void>;
 }
 
 export const useCompare = create<CompareStore>()((set, get) => ({
-  selectedStoreIds: [],
+  selectedBranchIds: [],
   results: [],
-  stores: [],
+  branches: [],
   loading: false,
 
-  toggleStore: (storeId: string) => {
-    const { selectedStoreIds } = get();
-    if (selectedStoreIds.includes(storeId)) {
+  toggleBranch: (branchId: string) => {
+    const { selectedBranchIds } = get();
+    if (selectedBranchIds.includes(branchId)) {
       set({
-        selectedStoreIds: selectedStoreIds.filter((id) => id !== storeId),
+        selectedBranchIds: selectedBranchIds.filter((id) => id !== branchId),
         results: [],
       });
-    } else if (selectedStoreIds.length < 3) {
+    } else if (selectedBranchIds.length < 3) {
       set({
-        selectedStoreIds: [...selectedStoreIds, storeId],
+        selectedBranchIds: [...selectedBranchIds, branchId],
         results: [],
       });
     }
   },
 
   clearSelection: () => {
-    set({ selectedStoreIds: [], results: [], stores: [] });
+    set({ selectedBranchIds: [], results: [], branches: [] });
   },
 
   compare: async (category?: string, search?: string) => {
-    const { selectedStoreIds } = get();
-    if (selectedStoreIds.length < 2) return;
+    const { selectedBranchIds } = get();
+    if (selectedBranchIds.length < 2) return;
 
     set({ loading: true });
 
     try {
       const params = new URLSearchParams({
-        storeIds: selectedStoreIds.join(","),
+        branchIds: selectedBranchIds.join(","),
       });
       if (category) params.set("category", category);
       if (search) params.set("search", search);
@@ -57,7 +66,7 @@ export const useCompare = create<CompareStore>()((set, get) => ({
       const data = await res.json();
       set({
         results: data.results,
-        stores: data.stores,
+        branches: data.branches,
         loading: false,
       });
     } catch {

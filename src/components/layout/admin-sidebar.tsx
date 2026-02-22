@@ -21,7 +21,7 @@ const adminLinks = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/banners", label: "Hero Banners", icon: ImagePlay },
   { href: "/admin/featured", label: "Featured", icon: Diamond },
-  { href: "/admin/stores", label: "Manage Stores", icon: Store },
+  { href: "/admin/stores", label: "Manage Vendors", icon: Store },
   { href: "/admin/categories", label: "Categories", icon: Tags },
   { href: "/admin/sponsored", label: "Sponsored", icon: Megaphone },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },

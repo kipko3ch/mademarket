@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 interface Filters {
   search: string;
   category: string;
-  storeId: string;
+  vendorId: string;
   sortBy: string;
   minPrice: string;
   maxPrice: string;
@@ -29,7 +29,7 @@ interface Category {
   slug: string;
 }
 
-interface Store {
+interface Vendor {
   id: string;
   name: string;
 }
@@ -41,7 +41,7 @@ function ProductsContent() {
   const [products, setProducts] = useState([]);
   const [sponsored, setSponsored] = useState([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [stores, setStores] = useState<Store[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -49,7 +49,7 @@ function ProductsContent() {
   const [filters, setFilters] = useState<Filters>({
     search: initialSearch,
     category: "",
-    storeId: "",
+    vendorId: "",
     sortBy: "name",
     minPrice: "",
     maxPrice: "",
@@ -61,8 +61,8 @@ function ProductsContent() {
     if (filters.search) params.set("search", filters.search);
     if (filters.category && filters.category !== "all")
       params.set("category", filters.category);
-    if (filters.storeId && filters.storeId !== "all")
-      params.set("storeId", filters.storeId);
+    if (filters.vendorId && filters.vendorId !== "all")
+      params.set("vendorId", filters.vendorId);
     if (filters.sortBy) params.set("sortBy", filters.sortBy);
     if (filters.minPrice) params.set("minPrice", filters.minPrice);
     if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
@@ -83,12 +83,15 @@ function ProductsContent() {
   useEffect(() => {
     async function fetchMeta() {
       try {
-        const [catRes, storeRes] = await Promise.all([
+        const [catRes, vendorRes] = await Promise.all([
           fetch("/api/categories"),
-          fetch("/api/stores"),
+          fetch("/api/vendors"),
         ]);
         if (catRes.ok) setCategories(await catRes.json());
-        if (storeRes.ok) setStores(await storeRes.json());
+        if (vendorRes.ok) {
+          const data = await vendorRes.json();
+          setVendors(Array.isArray(data) ? data : data.vendors || []);
+        }
       } catch { }
     }
     fetchMeta();
@@ -108,14 +111,14 @@ function ProductsContent() {
     setFilters({
       search: "",
       category: "",
-      storeId: "",
+      vendorId: "",
       sortBy: "name",
       minPrice: "",
       maxPrice: "",
     });
   }
 
-  const hasActiveFilters = filters.category || filters.storeId || filters.minPrice || filters.maxPrice;
+  const hasActiveFilters = filters.category || filters.vendorId || filters.minPrice || filters.maxPrice;
 
   return (
     <>
@@ -216,17 +219,17 @@ function ProductsContent() {
         {showAdvanced && (
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 border-t border-slate-100">
             <Select
-              value={filters.storeId || "all"}
-              onValueChange={(v) => updateFilter("storeId", v === "all" ? "" : v)}
+              value={filters.vendorId || "all"}
+              onValueChange={(v) => updateFilter("vendorId", v === "all" ? "" : v)}
             >
               <SelectTrigger className="w-full sm:w-48 rounded-xl border-slate-200 bg-slate-50 text-sm h-10">
-                <SelectValue placeholder="All Stores" />
+                <SelectValue placeholder="All Vendors" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Stores</SelectItem>
-                {stores.map((store) => (
-                  <SelectItem key={store.id} value={store.id}>
-                    {store.name}
+                <SelectItem value="all">All Vendors</SelectItem>
+                {vendors.map((vendor) => (
+                  <SelectItem key={vendor.id} value={vendor.id}>
+                    {vendor.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -261,17 +264,17 @@ function ProductsContent() {
                 </button>
               </span>
             )}
-            {filters.storeId && (
+            {filters.vendorId && (
               <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">
-                {stores.find((s) => s.id === filters.storeId)?.name || "Store"}
-                <button onClick={() => updateFilter("storeId", "")} className="hover:text-red-500">
+                {vendors.find((v) => v.id === filters.vendorId)?.name || "Vendor"}
+                <button onClick={() => updateFilter("vendorId", "")} className="hover:text-red-500">
                   <X className="h-3 w-3" />
                 </button>
               </span>
             )}
             {(filters.minPrice || filters.maxPrice) && (
               <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">
-                N$ {filters.minPrice || "0"} – {filters.maxPrice || "∞"}
+                N$ {filters.minPrice || "0"} – {filters.maxPrice || "\u221E"}
                 <button onClick={() => { updateFilter("minPrice", ""); updateFilter("maxPrice", ""); }} className="hover:text-red-500">
                   <X className="h-3 w-3" />
                 </button>
@@ -331,7 +334,7 @@ export default function ProductsPage() {
           Browse Products
         </h1>
         <p className="text-slate-500 mt-1 text-xs sm:text-sm">
-          Compare prices across stores and find the best deals in Namibia
+          Compare prices across vendors and find the best deals in Namibia
         </p>
       </div>
 

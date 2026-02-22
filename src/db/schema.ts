@@ -26,11 +26,85 @@ export const users = pgTable("users", {
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
-  stores: many(stores),
+  vendors: many(vendors),
   searchLogs: many(searchLogs),
 }));
 
-// ─── Stores ──────────────────────────────────────────────────────────────────
+// ─── Vendors ─────────────────────────────────────────────────────────────────
+
+export const vendors = pgTable(
+  "vendors",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    slug: text("slug").notNull().unique(),
+    description: text("description"),
+    logoUrl: text("logo_url"),
+    bannerUrl: text("banner_url"),
+    websiteUrl: text("website_url"),
+    approved: boolean("approved").notNull().default(false),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_vendors_owner").on(table.ownerId),
+  ]
+);
+
+export const vendorsRelations = relations(vendors, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [vendors.ownerId],
+    references: [users.id],
+  }),
+  branches: many(branches),
+  sponsoredListings: many(sponsoredListings),
+}));
+
+// ─── Branches ────────────────────────────────────────────────────────────────
+
+export const branches = pgTable(
+  "branches",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vendorId: uuid("vendor_id")
+      .notNull()
+      .references(() => vendors.id, { onDelete: "cascade" }),
+    branchName: text("branch_name").notNull(),
+    slug: text("slug").notNull(),
+    town: text("town"),
+    region: text("region"),
+    address: text("address"),
+    latitude: text("latitude"),
+    longitude: text("longitude"),
+    whatsappNumber: text("whatsapp_number"),
+    approved: boolean("approved").notNull().default(false),
+    active: boolean("active").notNull().default(true),
+    showInMarquee: boolean("show_in_marquee").notNull().default(false),
+    marqueeOrder: integer("marquee_order").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_branches_vendor").on(table.vendorId),
+    index("idx_branches_region").on(table.region),
+    index("idx_branches_town").on(table.town),
+    uniqueIndex("idx_branches_vendor_slug").on(table.vendorId, table.slug),
+  ]
+);
+
+export const branchesRelations = relations(branches, ({ one, many }) => ({
+  vendor: one(vendors, {
+    fields: [branches.vendorId],
+    references: [vendors.id],
+  }),
+  storeProducts: many(storeProducts),
+  bundles: many(bundles),
+  brochures: many(brochures),
+}));
+
+// ─── Stores (legacy — kept for migration, will be removed in Phase 6) ───────
 
 export const stores = pgTable("stores", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -58,17 +132,6 @@ export const stores = pgTable("stores", {
   index("idx_stores_region").on(table.region),
   index("idx_stores_city").on(table.city),
 ]);
-
-export const storesRelations = relations(stores, ({ one, many }) => ({
-  owner: one(users, {
-    fields: [stores.ownerId],
-    references: [users.id],
-  }),
-  storeProducts: many(storeProducts),
-  sponsoredListings: many(sponsoredListings),
-  bundles: many(bundles),
-  brochures: many(brochures),
-}));
 
 // ─── Categories ──────────────────────────────────────────────────────────────
 
@@ -120,15 +183,16 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   storeProducts: many(storeProducts),
 }));
 
-// ─── Store Products (prices per store) ───────────────────────────────────────
+// ─── Store Products (prices per branch) ──────────────────────────────────────
 
 export const storeProducts = pgTable(
   "store_products",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     storeId: uuid("store_id")
-      .notNull()
       .references(() => stores.id, { onDelete: "cascade" }),
+    branchId: uuid("branch_id")
+      .references(() => branches.id, { onDelete: "cascade" }),
     productId: uuid("product_id")
       .notNull()
       .references(() => products.id, { onDelete: "cascade" }),
@@ -146,18 +210,15 @@ export const storeProducts = pgTable(
   },
   (table) => [
     index("idx_store_products_store").on(table.storeId),
+    index("idx_store_products_branch").on(table.branchId),
     index("idx_store_products_product").on(table.productId),
-    uniqueIndex("idx_store_products_store_product").on(
-      table.storeId,
-      table.productId
-    ),
   ]
 );
 
 export const storeProductsRelations = relations(storeProducts, ({ one, many }) => ({
-  store: one(stores, {
-    fields: [storeProducts.storeId],
-    references: [stores.id],
+  branch: one(branches, {
+    fields: [storeProducts.branchId],
+    references: [branches.id],
   }),
   product: one(products, {
     fields: [storeProducts.productId],
@@ -221,8 +282,9 @@ export const sponsoredListings = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     storeId: uuid("store_id")
-      .notNull()
       .references(() => stores.id, { onDelete: "cascade" }),
+    vendorId: uuid("vendor_id")
+      .references(() => vendors.id, { onDelete: "cascade" }),
     productId: uuid("product_id")
       .notNull()
       .references(() => products.id, { onDelete: "cascade" }),
@@ -235,6 +297,7 @@ export const sponsoredListings = pgTable(
   },
   (table) => [
     index("idx_sponsored_store").on(table.storeId),
+    index("idx_sponsored_vendor").on(table.vendorId),
     index("idx_sponsored_active").on(table.active, table.endDate),
   ]
 );
@@ -242,9 +305,9 @@ export const sponsoredListings = pgTable(
 export const sponsoredListingsRelations = relations(
   sponsoredListings,
   ({ one }) => ({
-    store: one(stores, {
-      fields: [sponsoredListings.storeId],
-      references: [stores.id],
+    vendor: one(vendors, {
+      fields: [sponsoredListings.vendorId],
+      references: [vendors.id],
     }),
     product: one(products, {
       fields: [sponsoredListings.productId],
@@ -379,28 +442,90 @@ export const bundles = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     storeId: uuid("store_id")
-      .notNull()
       .references(() => stores.id, { onDelete: "cascade" }),
+    branchId: uuid("branch_id")
+      .references(() => branches.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     slug: text("slug"),
     description: text("description"),
     imageUrl: text("image_url"),
     price: decimal("price", { precision: 10, scale: 2 }).notNull(),
     externalUrl: text("external_url"),
-    items: text("items"), // JSON string of included product names/descriptions
+    items: text("items"), // legacy — kept for migration, use bundleProducts instead
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
     index("idx_bundles_store").on(table.storeId),
+    index("idx_bundles_branch").on(table.branchId),
     index("idx_bundles_active").on(table.active),
   ]
 );
 
-export const bundlesRelations = relations(bundles, ({ one }) => ({
-  store: one(stores, {
-    fields: [bundles.storeId],
-    references: [stores.id],
+export const bundlesRelations = relations(bundles, ({ one, many }) => ({
+  branch: one(branches, {
+    fields: [bundles.branchId],
+    references: [branches.id],
+  }),
+  bundleProducts: many(bundleProducts),
+  bundleImages: many(bundleImages),
+}));
+
+// ─── Bundle Products (junction table) ────────────────────────────────────────
+
+export const bundleProducts = pgTable(
+  "bundle_products",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    bundleId: uuid("bundle_id")
+      .notNull()
+      .references(() => bundles.id, { onDelete: "cascade" }),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    quantity: integer("quantity").notNull().default(1),
+  },
+  (table) => [
+    index("idx_bundle_products_bundle").on(table.bundleId),
+    uniqueIndex("idx_bundle_products_bundle_product").on(
+      table.bundleId,
+      table.productId
+    ),
+  ]
+);
+
+export const bundleProductsRelations = relations(bundleProducts, ({ one }) => ({
+  bundle: one(bundles, {
+    fields: [bundleProducts.bundleId],
+    references: [bundles.id],
+  }),
+  product: one(products, {
+    fields: [bundleProducts.productId],
+    references: [products.id],
+  }),
+}));
+
+// ─── Bundle Images ───────────────────────────────────────────────────────────
+
+export const bundleImages = pgTable(
+  "bundle_images",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    bundleId: uuid("bundle_id")
+      .notNull()
+      .references(() => bundles.id, { onDelete: "cascade" }),
+    imageUrl: text("image_url").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_bundle_images_bundle").on(table.bundleId),
+  ]
+);
+
+export const bundleImagesRelations = relations(bundleImages, ({ one }) => ({
+  bundle: one(bundles, {
+    fields: [bundleImages.bundleId],
+    references: [bundles.id],
   }),
 }));
 
@@ -411,8 +536,9 @@ export const brochures = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     storeId: uuid("store_id")
-      .notNull()
       .references(() => stores.id, { onDelete: "cascade" }),
+    branchId: uuid("branch_id")
+      .references(() => branches.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     slug: text("slug").notNull(),
     description: text("description"),
@@ -428,19 +554,19 @@ export const brochures = pgTable(
   },
   (table) => [
     index("idx_brochures_store").on(table.storeId),
+    index("idx_brochures_branch").on(table.branchId),
     index("idx_brochures_status").on(table.status),
     uniqueIndex("idx_brochures_slug").on(table.slug),
   ]
 );
 
 export const brochuresRelations = relations(brochures, ({ one }) => ({
-  store: one(stores, {
-    fields: [brochures.storeId],
-    references: [stores.id],
+  branch: one(branches, {
+    fields: [brochures.branchId],
+    references: [branches.id],
   }),
   creator: one(users, {
     fields: [brochures.createdBy],
     references: [users.id],
   }),
 }));
-

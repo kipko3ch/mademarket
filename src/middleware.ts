@@ -22,6 +22,12 @@ export default auth((req) => {
   if (pathname.startsWith("/api/stores") && req.method === "GET") {
     return NextResponse.next();
   }
+  if (pathname.startsWith("/api/vendors") && req.method === "GET") {
+    return NextResponse.next();
+  }
+  if (pathname.startsWith("/api/branches") && req.method === "GET") {
+    return NextResponse.next();
+  }
   if (pathname.startsWith("/api/bundles") && req.method === "GET") {
     return NextResponse.next();
   }
@@ -35,6 +41,12 @@ export default auth((req) => {
     return NextResponse.next();
   }
   if (pathname.startsWith("/api/banners") && req.method === "GET") {
+    return NextResponse.next();
+  }
+  if (pathname.startsWith("/api/brochures") && req.method === "GET") {
+    return NextResponse.next();
+  }
+  if (pathname.startsWith("/api/price-history") && req.method === "GET") {
     return NextResponse.next();
   }
 

@@ -2,10 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { brochures, stores, bundles } from "@/db/schema";
+import { brochures, branches, vendors, bundles } from "@/db/schema";
 import { eq, and, ne, desc } from "drizzle-orm";
 
-// GET /api/brochures/[slug] — Return single brochure by slug with store info and related items
+// GET /api/brochures/[slug] — Return single brochure by slug with vendor/branch info and related items
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -13,11 +13,10 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    // Fetch the brochure with full store info
     const [result] = await db
       .select({
         id: brochures.id,
-        storeId: brochures.storeId,
+        branchId: brochures.branchId,
         title: brochures.title,
         slug: brochures.slug,
         description: brochures.description,
@@ -28,13 +27,15 @@ export async function GET(
         validUntil: brochures.validUntil,
         createdBy: brochures.createdBy,
         createdAt: brochures.createdAt,
-        storeName: stores.name,
-        storeSlug: stores.slug,
-        storeLogo: stores.logoUrl,
-        storeBanner: stores.bannerUrl,
+        vendorName: vendors.name,
+        vendorSlug: vendors.slug,
+        vendorLogo: vendors.logoUrl,
+        vendorBanner: vendors.bannerUrl,
+        branchTown: branches.town,
       })
       .from(brochures)
-      .innerJoin(stores, and(eq(brochures.storeId, stores.id), eq(stores.approved, true), eq(stores.suspended, false)))
+      .innerJoin(branches, eq(brochures.branchId, branches.id))
+      .innerJoin(vendors, and(eq(branches.vendorId, vendors.id), eq(vendors.approved, true), eq(vendors.active, true)))
       .where(
         and(
           eq(brochures.slug, slug),
@@ -50,7 +51,7 @@ export async function GET(
       );
     }
 
-    // Fetch related brochures (same store, published, exclude current, limit 4)
+    // Fetch related brochures (same branch, published, exclude current, limit 4)
     const relatedBrochures = await db
       .select({
         id: brochures.id,
@@ -66,7 +67,7 @@ export async function GET(
       .from(brochures)
       .where(
         and(
-          eq(brochures.storeId, result.storeId),
+          eq(brochures.branchId, result.branchId!),
           eq(brochures.status, "published"),
           ne(brochures.id, result.id)
         )
@@ -74,7 +75,7 @@ export async function GET(
       .orderBy(desc(brochures.createdAt))
       .limit(4);
 
-    // Fetch related bundles (same store, active, limit 4)
+    // Fetch related bundles (same branch, active, limit 4)
     const relatedBundles = await db
       .select({
         id: bundles.id,
@@ -85,12 +86,12 @@ export async function GET(
         price: bundles.price,
         externalUrl: bundles.externalUrl,
         items: bundles.items,
-        storeId: bundles.storeId,
+        branchId: bundles.branchId,
       })
       .from(bundles)
       .where(
         and(
-          eq(bundles.storeId, result.storeId),
+          eq(bundles.branchId, result.branchId!),
           eq(bundles.active, true)
         )
       )
@@ -99,6 +100,11 @@ export async function GET(
 
     return NextResponse.json({
       ...result,
+      // backward-compat aliases
+      storeName: result.vendorName,
+      storeSlug: result.vendorSlug,
+      storeLogo: result.vendorLogo,
+      storeBanner: result.vendorBanner,
       relatedBrochures,
       relatedBundles: relatedBundles.map((b) => ({
         ...b,

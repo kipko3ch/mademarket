@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { sponsoredListings, stores } from "@/db/schema";
+import { sponsoredListings, vendors } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
@@ -8,7 +8,7 @@ import { z } from "zod";
 export const dynamic = "force-dynamic";
 
 const createSponsoredSchema = z.object({
-  storeId: z.string().uuid(),
+  vendorId: z.string().uuid(),
   productId: z.string().uuid(),
   startDate: z.string(),
   endDate: z.string(),
@@ -25,15 +25,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = createSponsoredSchema.parse(body);
 
-    // Verify store ownership if vendor
+    // Verify vendor ownership if vendor
     if (session.user.role === "vendor") {
-      const [store] = await db
-        .select({ ownerId: stores.ownerId })
-        .from(stores)
-        .where(eq(stores.id, validated.storeId))
+      const [vendor] = await db
+        .select({ ownerId: vendors.ownerId })
+        .from(vendors)
+        .where(eq(vendors.id, validated.vendorId))
         .limit(1);
 
-      if (!store || store.ownerId !== session.user.id) {
+      if (!vendor || vendor.ownerId !== session.user.id) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const [listing] = await db
       .insert(sponsoredListings)
       .values({
-        storeId: validated.storeId,
+        vendorId: validated.vendorId,
         productId: validated.productId,
         startDate: new Date(validated.startDate),
         endDate: new Date(validated.endDate),

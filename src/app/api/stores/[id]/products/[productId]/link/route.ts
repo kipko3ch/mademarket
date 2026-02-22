@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { storeProducts, products, stores } from "@/db/schema";
+import { storeProducts, products, branches, vendors } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { normalizeProductName, slugify } from "@/lib/utils";
@@ -9,7 +9,7 @@ type RouteParams = { params: Promise<{ id: string; productId: string }> };
 
 // PATCH /api/stores/[id]/products/[productId]/link — Change the linked core product
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
-  const { id: storeId, productId: storeProductId } = await params;
+  const { id: branchId, productId: storeProductId } = await params;
   const session = await auth();
 
   if (
@@ -19,15 +19,25 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Verify store ownership for vendors
+  // Verify branch ownership for vendors
   if (session.user.role === "vendor") {
-    const [store] = await db
-      .select({ ownerId: stores.ownerId })
-      .from(stores)
-      .where(eq(stores.id, storeId))
+    const [branch] = await db
+      .select({ vendorId: branches.vendorId })
+      .from(branches)
+      .where(eq(branches.id, branchId))
       .limit(1);
 
-    if (!store || store.ownerId !== session.user.id) {
+    if (!branch) {
+      return NextResponse.json({ error: "Branch not found" }, { status: 404 });
+    }
+
+    const [vendor] = await db
+      .select({ ownerId: vendors.ownerId })
+      .from(vendors)
+      .where(eq(vendors.id, branch.vendorId))
+      .limit(1);
+
+    if (!vendor || vendor.ownerId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }
@@ -43,14 +53,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Verify the store product exists and belongs to this store
+    // Verify the store product exists and belongs to this branch
     const [storeProduct] = await db
       .select({ id: storeProducts.id })
       .from(storeProducts)
       .where(
         and(
           eq(storeProducts.id, storeProductId),
-          eq(storeProducts.storeId, storeId)
+          eq(storeProducts.branchId, branchId)
         )
       )
       .limit(1);
@@ -89,7 +99,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(updated);
   } catch (error: unknown) {
-    // Handle unique constraint violation (store already has this product linked)
+    // Handle unique constraint violation
     if (
       error &&
       typeof error === "object" &&
@@ -97,7 +107,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       (error as { code: string }).code === "23505"
     ) {
       return NextResponse.json(
-        { error: "This store already has the target product linked" },
+        { error: "This branch already has the target product linked" },
         { status: 409 }
       );
     }
@@ -115,7 +125,7 @@ export async function DELETE(
   _req: NextRequest,
   { params }: RouteParams
 ) {
-  const { id: storeId, productId: storeProductId } = await params;
+  const { id: branchId, productId: storeProductId } = await params;
   const session = await auth();
 
   if (
@@ -125,15 +135,25 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Verify store ownership for vendors
+  // Verify branch ownership for vendors
   if (session.user.role === "vendor") {
-    const [store] = await db
-      .select({ ownerId: stores.ownerId })
-      .from(stores)
-      .where(eq(stores.id, storeId))
+    const [branch] = await db
+      .select({ vendorId: branches.vendorId })
+      .from(branches)
+      .where(eq(branches.id, branchId))
       .limit(1);
 
-    if (!store || store.ownerId !== session.user.id) {
+    if (!branch) {
+      return NextResponse.json({ error: "Branch not found" }, { status: 404 });
+    }
+
+    const [vendor] = await db
+      .select({ ownerId: vendors.ownerId })
+      .from(vendors)
+      .where(eq(vendors.id, branch.vendorId))
+      .limit(1);
+
+    if (!vendor || vendor.ownerId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }
@@ -144,13 +164,13 @@ export async function DELETE(
       .select({
         id: storeProducts.id,
         productId: storeProducts.productId,
-        storeId: storeProducts.storeId,
+        branchId: storeProducts.branchId,
       })
       .from(storeProducts)
       .where(
         and(
           eq(storeProducts.id, storeProductId),
-          eq(storeProducts.storeId, storeId)
+          eq(storeProducts.branchId, branchId)
         )
       )
       .limit(1);
@@ -202,7 +222,7 @@ export async function DELETE(
       })
       .returning();
 
-    // Update the store product to point to the new standalone product
+    // Point the store product to the new standalone product
     const [updated] = await db
       .update(storeProducts)
       .set({

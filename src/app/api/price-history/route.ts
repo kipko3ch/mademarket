@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { priceHistory, storeProducts, products, stores } from "@/db/schema";
+import { priceHistory, storeProducts, products, branches, vendors } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -17,16 +17,17 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Get the store product info
+    // Get the store product info via branch -> vendor
     const [sp] = await db
       .select({
         productName: products.name,
-        storeName: stores.name,
+        storeName: vendors.name,
         currentPrice: storeProducts.price,
       })
       .from(storeProducts)
       .innerJoin(products, eq(storeProducts.productId, products.id))
-      .innerJoin(stores, eq(storeProducts.storeId, stores.id))
+      .innerJoin(branches, eq(storeProducts.branchId, branches.id))
+      .innerJoin(vendors, eq(branches.vendorId, vendors.id))
       .where(eq(storeProducts.id, storeProductId))
       .limit(1);
 

@@ -9,21 +9,30 @@ import { ProductCard } from "@/components/products/product-card";
 import { generateWhatsAppLink } from "@/lib/whatsapp";
 import Link from "next/link";
 
-interface StoreData {
+interface BranchData {
+  id: string;
+  branchName: string;
+  branchSlug: string;
+  town: string | null;
+  region: string | null;
+  address: string | null;
+  whatsappNumber: string | null;
+  products: BranchProductData[];
+}
+
+interface VendorData {
   id: string;
   name: string;
+  slug: string;
   description: string | null;
   logoUrl: string | null;
   bannerUrl: string | null;
   websiteUrl: string | null;
-  whatsappNumber: string | null;
-  address: string | null;
-  region: string | null;
-  city: string | null;
-  productCount: number;
+  branches: BranchData[];
+  totalProductCount: number;
 }
 
-interface StoreProductData {
+interface BranchProductData {
   id: string;
   productId: string;
   productName: string;
@@ -43,9 +52,9 @@ interface BrochureData {
   bannerImageUrl: string | null;
   validFrom: string | null;
   validUntil: string | null;
-  storeName: string;
-  storeSlug: string;
-  storeLogo: string | null;
+  vendorName: string;
+  vendorSlug: string;
+  vendorLogo: string | null;
 }
 
 export default function StoreProfilePage({
@@ -54,30 +63,24 @@ export default function StoreProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const [store, setStore] = useState<StoreData | null>(null);
-  const [products, setProducts] = useState<StoreProductData[]>([]);
+  const [vendor, setVendor] = useState<VendorData | null>(null);
   const [brochures, setBrochures] = useState<BrochureData[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    async function fetchStore() {
+    async function fetchVendor() {
       try {
-        // Fetch store first to resolve slug → UUID
-        const storeRes = await fetch(`/api/stores/${id}`);
-        if (!storeRes.ok) return;
+        // Fetch vendor by slug or id — the API resolves both
+        const vendorRes = await fetch(`/api/vendors/${id}`);
+        if (!vendorRes.ok) return;
 
-        const storeData = await storeRes.json();
-        setStore(storeData);
+        const vendorData = await vendorRes.json();
+        setVendor(vendorData);
 
-        // Use resolved UUID for subsequent fetches
-        const resolvedId = storeData.id;
-        const [productsRes, brochuresRes] = await Promise.all([
-          fetch(`/api/stores/${resolvedId}/products`),
-          fetch(`/api/brochures?storeId=${resolvedId}`),
-        ]);
-
-        if (productsRes.ok) setProducts(await productsRes.json());
+        // Use resolved vendor id for brochure fetches
+        const resolvedId = vendorData.id;
+        const brochuresRes = await fetch(`/api/brochures?vendorId=${resolvedId}`);
         if (brochuresRes.ok) {
           const data = await brochuresRes.json();
           setBrochures(Array.isArray(data) ? data : data.brochures || []);
@@ -87,10 +90,15 @@ export default function StoreProfilePage({
         setLoading(false);
       }
     }
-    fetchStore();
+    fetchVendor();
   }, [id]);
 
-  const filteredProducts = products.filter((p) =>
+  // Collect all products across all branches for filtering
+  const allProducts = vendor?.branches.flatMap((b) =>
+    b.products.map((p) => ({ ...p, branchName: b.branchName, branchTown: b.town }))
+  ) || [];
+
+  const filteredProducts = allProducts.filter((p) =>
     p.productName.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -121,14 +129,14 @@ export default function StoreProfilePage({
     );
   }
 
-  if (!store) {
+  if (!vendor) {
     return (
       <div className="max-w-[1440px] mx-auto px-3 sm:px-4 md:px-8 py-16 text-center">
         <div className="h-20 w-20 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
           <Store className="h-10 w-10 text-slate-400" />
         </div>
-        <h1 className="text-2xl font-bold mb-2">Store not found</h1>
-        <p className="text-slate-500 text-sm mb-4">This store may not exist or hasn&apos;t been approved yet.</p>
+        <h1 className="text-2xl font-bold mb-2">Vendor not found</h1>
+        <p className="text-slate-500 text-sm mb-4">This vendor may not exist or hasn&apos;t been approved yet.</p>
         <Link href="/">
           <Button variant="outline" className="rounded-xl">Back to Home</Button>
         </Link>
@@ -144,13 +152,13 @@ export default function StoreProfilePage({
         Home
       </Link>
 
-      {/* Store Banner + Header */}
+      {/* Vendor Banner + Header */}
       <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden mb-6 sm:mb-8">
         {/* Banner Image */}
         <div className="relative h-40 sm:h-56 md:h-72 bg-gradient-to-r from-primary/10 via-primary/5 to-slate-50">
-          {store.bannerUrl ? (
+          {vendor.bannerUrl ? (
             <img
-              src={store.bannerUrl}
+              src={vendor.bannerUrl}
               alt=""
               className="w-full h-full object-cover"
             />
@@ -160,13 +168,13 @@ export default function StoreProfilePage({
           <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/30 to-transparent" />
         </div>
 
-        {/* Store Info Overlay */}
+        {/* Vendor Info Overlay */}
         <div className="relative -mt-16 sm:-mt-20 px-4 sm:px-6 md:px-8 pb-5 sm:pb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3 sm:gap-5">
             {/* Logo */}
             <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl border-4 border-white shadow-lg bg-white flex items-center justify-center overflow-hidden shrink-0">
-              {store.logoUrl ? (
-                <img src={store.logoUrl} alt={store.name} className="h-full w-full object-contain p-2" />
+              {vendor.logoUrl ? (
+                <img src={vendor.logoUrl} alt={vendor.name} className="h-full w-full object-contain p-2" />
               ) : (
                 <Store className="h-10 w-10 text-slate-400" />
               )}
@@ -174,49 +182,31 @@ export default function StoreProfilePage({
 
             {/* Name & Meta */}
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 leading-tight">{store.name}</h1>
-              {store.description && (
-                <p className="text-slate-600 text-xs sm:text-sm mt-1 line-clamp-2 max-w-xl">{store.description}</p>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 leading-tight">{vendor.name}</h1>
+              {vendor.description && (
+                <p className="text-slate-600 text-xs sm:text-sm mt-1 line-clamp-2 max-w-xl">{vendor.description}</p>
               )}
               <div className="flex items-center gap-2 sm:gap-3 mt-2 flex-wrap">
                 <Badge variant="secondary" className="rounded-lg bg-primary/10 text-primary border-0 text-xs font-semibold">
                   <Package className="h-3 w-3 mr-1" />
-                  {products.length} Products
+                  {allProducts.length} Products
                 </Badge>
-                {(store.city || store.region || store.address) && (
-                  <span className="text-xs text-slate-500 flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {store.city && store.region
-                      ? `${store.city}, ${store.region}, Namibia`
-                      : store.address}
-                  </span>
-                )}
+                <Badge variant="secondary" className="rounded-lg bg-slate-100 text-slate-600 border-0 text-xs font-semibold">
+                  <MapPin className="h-3 w-3 mr-1" />
+                  {vendor.branches.length} {vendor.branches.length === 1 ? "Branch" : "Branches"}
+                </Badge>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2 shrink-0 mt-2 sm:mt-0">
-              {store.websiteUrl && (
-                <a href={store.websiteUrl} target="_blank" rel="noopener noreferrer">
+              {vendor.websiteUrl && (
+                <a href={vendor.websiteUrl} target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" className="rounded-xl text-xs sm:text-sm h-9 sm:h-10">
                     <Globe className="h-4 w-4 mr-1.5" />
                     Website
                   </Button>
                 </a>
-              )}
-              {store.whatsappNumber && (
-                <Button
-                  className="rounded-xl text-xs sm:text-sm h-9 sm:h-10 bg-green-600 hover:bg-green-700"
-                  onClick={() => {
-                    window.open(
-                      generateWhatsAppLink(store.whatsappNumber!, `Hi ${store.name}, I found your store on MaDe Market!`),
-                      "_blank"
-                    );
-                  }}
-                >
-                  <MessageCircle className="h-4 w-4 mr-1.5" />
-                  WhatsApp
-                </Button>
               )}
             </div>
           </div>
@@ -232,7 +222,7 @@ export default function StoreProfilePage({
                 <img src="/icons/brochure.png" alt="Brochures" className="h-full w-full object-contain" />
               </div>
               <div>
-                <h2 className="font-heading text-lg sm:text-xl md:text-2xl text-slate-900">Store Brochures</h2>
+                <h2 className="font-heading text-lg sm:text-xl md:text-2xl text-slate-900">Brochures</h2>
                 <p className="text-slate-500 text-xs sm:text-sm">Latest catalogues and weekly leaflets</p>
               </div>
             </div>
@@ -263,55 +253,89 @@ export default function StoreProfilePage({
         </section>
       )}
 
-      {/* Products Section */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
-        <h2 className="font-heading text-lg sm:text-xl md:text-2xl text-slate-900">
-          Products ({filteredProducts.length})
-        </h2>
-        {products.length > 4 && (
-          <div className="relative w-full sm:w-64">
+      {/* Branch Sections */}
+      {vendor.branches.map((branch) => {
+        const branchProducts = branch.products.filter((p) =>
+          p.productName.toLowerCase().includes(search.toLowerCase())
+        );
+
+        return (
+          <section key={branch.id} className="mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <div>
+                <h2 className="font-heading text-lg sm:text-xl text-slate-900">
+                  {vendor.name} {branch.town ? `\u2013 ${branch.town}` : `\u2013 ${branch.branchName}`}
+                </h2>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  {branch.town && (
+                    <span className="text-xs text-slate-500 flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {branch.town}{branch.region ? `, ${branch.region}` : ""}
+                    </span>
+                  )}
+                  <span className="text-xs text-slate-400">{branchProducts.length} products</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {branch.whatsappNumber && (
+                  <Button
+                    size="sm"
+                    className="rounded-xl text-xs h-8 bg-green-600 hover:bg-green-700"
+                    onClick={() => {
+                      window.open(
+                        generateWhatsAppLink(branch.whatsappNumber!, `Hi ${vendor.name} ${branch.branchName}, I found your store on MaDe Market!`),
+                        "_blank"
+                      );
+                    }}
+                  >
+                    <MessageCircle className="h-3.5 w-3.5 mr-1" />
+                    WhatsApp
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {branchProducts.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-slate-500 font-medium text-sm">
+                  {search ? "No products match your search in this branch" : "No products listed yet"}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+                {branchProducts.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    id={p.productId}
+                    name={p.productName}
+                    imageUrl={p.productImage}
+                    categoryName={null}
+                    unit={p.unit}
+                    minPrice={Number(p.price)}
+                    maxPrice={null}
+                    storeCount={1}
+                    storeName={vendor.name}
+                    storeLogo={vendor.logoUrl}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
+
+      {/* Global Search Bar */}
+      {allProducts.length > 4 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
-              placeholder="Search products..."
+              placeholder="Search products across all branches..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-primary focus:border-transparent focus:bg-white transition-all outline-none"
+              className="w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl bg-white text-sm focus:ring-2 focus:ring-primary focus:border-transparent shadow-xl transition-all outline-none"
             />
           </div>
-        )}
-      </div>
-
-      {filteredProducts.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="h-16 w-16 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-4">
-            <img src="/icons/productplaceholder.png" alt="Placeholder" className="h-8 w-8 object-contain opacity-50" />
-          </div>
-          <p className="text-slate-500 font-medium">
-            {search ? "No products match your search" : "No products listed yet"}
-          </p>
-          {search && (
-            <button onClick={() => setSearch("")} className="text-primary text-sm mt-2 hover:underline">
-              Clear search
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-          {filteredProducts.map((p) => (
-            <ProductCard
-              key={p.id}
-              id={p.productId}
-              name={p.productName}
-              imageUrl={p.productImage}
-              categoryName={null}
-              unit={p.unit}
-              minPrice={Number(p.price)}
-              maxPrice={null}
-              storeCount={1}
-              storeName={store.name}
-              storeLogo={store.logoUrl}
-            />
-          ))}
         </div>
       )}
     </div>
