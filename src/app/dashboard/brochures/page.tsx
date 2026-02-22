@@ -23,8 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, FileText, Calendar } from "lucide-react";
+import { Plus, Edit2, Trash2, FileText, Calendar, AlertTriangle } from "lucide-react";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { useBranch } from "@/hooks/use-branch";
 
 interface Brochure {
   id: string;
@@ -49,6 +50,7 @@ const emptyForm = {
 };
 
 export default function VendorBrochuresPage() {
+  const { selectedBranchId, branches } = useBranch();
   const [brochures, setBrochures] = useState<Brochure[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -58,8 +60,13 @@ export default function VendorBrochuresPage() {
   const [form, setForm] = useState(emptyForm);
 
   const fetchBrochures = useCallback(async () => {
+    if (!selectedBranchId) {
+      setBrochures([]);
+      setLoading(false);
+      return;
+    }
     try {
-      const res = await fetch("/api/dashboard/brochures");
+      const res = await fetch(`/api/dashboard/brochures?branchId=${selectedBranchId}`);
       if (res.ok) {
         setBrochures(await res.json());
       }
@@ -68,9 +75,10 @@ export default function VendorBrochuresPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedBranchId]);
 
   useEffect(() => {
+    setLoading(true);
     fetchBrochures();
   }, [fetchBrochures]);
 
@@ -100,10 +108,17 @@ export default function VendorBrochuresPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!selectedBranchId) {
+      toast.error("Please select a branch first");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       const payload = {
+        branchId: selectedBranchId,
         title: form.title,
         description: form.description || undefined,
         bannerImageUrl: form.bannerImageUrl || undefined,
@@ -186,6 +201,21 @@ export default function VendorBrochuresPage() {
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-72 bg-muted rounded-2xl animate-pulse" />
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedBranchId && branches.length > 0) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">Brochures</h1>
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-amber-800 text-sm">No Branch Selected</p>
+            <p className="text-xs text-amber-700 mt-1">Please select a branch from the dropdown in the sidebar to manage brochures for that location.</p>
+          </div>
         </div>
       </div>
     );

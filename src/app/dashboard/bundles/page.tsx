@@ -27,6 +27,11 @@ interface BundleProduct {
   productImageUrl: string | null;
 }
 
+interface BundleImage {
+  id: string;
+  imageUrl: string;
+}
+
 interface Bundle {
   id: string;
   branchId: string;
@@ -39,6 +44,7 @@ interface Bundle {
   active: boolean;
   createdAt: string;
   bundleProducts: BundleProduct[];
+  bundleImages?: BundleImage[];
 }
 
 interface SearchProduct {
@@ -59,6 +65,7 @@ const emptyForm = {
   name: "",
   description: "",
   imageUrl: "",
+  images: [] as string[],
   price: "",
   externalUrl: "",
   items: "",
@@ -165,10 +172,15 @@ export default function VendorBundlesPage() {
 
   function openEditDialog(bundle: Bundle) {
     setEditingId(bundle.id);
+    // Populate additional images from bundleImages (excluding the main imageUrl)
+    const additionalImages = (bundle.bundleImages || [])
+      .map((bi) => bi.imageUrl)
+      .filter((url) => url !== bundle.imageUrl);
     setForm({
       name: bundle.name,
       description: bundle.description || "",
       imageUrl: bundle.imageUrl || "",
+      images: additionalImages,
       price: String(bundle.price),
       externalUrl: bundle.externalUrl || "",
       items: bundle.items || "",
@@ -203,11 +215,18 @@ export default function VendorBundlesPage() {
     setSubmitting(true);
 
     try {
+      // Combine main imageUrl + additional images for the API
+      const allImages = [
+        ...(form.imageUrl ? [form.imageUrl] : []),
+        ...form.images,
+      ];
+
       const payload = {
         branchId: selectedBranchId,
         name: form.name,
         description: form.description,
         imageUrl: form.imageUrl,
+        images: allImages.length > 0 ? allImages : undefined,
         price: parseFloat(form.price),
         externalUrl: form.externalUrl,
         items: form.items,
@@ -349,15 +368,50 @@ export default function VendorBundlesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Bundle Image</Label>
+                <Label>Main Image</Label>
                 <ImageUpload
                   value={form.imageUrl || undefined}
                   onChange={(url) => setForm({ ...form, imageUrl: url })}
                   onRemove={() => setForm({ ...form, imageUrl: "" })}
                   folder="bundles"
                   aspectRatio="auto"
-                  label="Upload Bundle Image"
+                  label="Upload Main Image"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Additional Images</Label>
+                <div className="space-y-3">
+                  {form.images.map((img, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <div className="flex-1">
+                        <ImageUpload
+                          value={img}
+                          onChange={(url) => {
+                            const newImages = [...form.images];
+                            newImages[idx] = url;
+                            setForm({ ...form, images: newImages });
+                          }}
+                          onRemove={() => {
+                            setForm({ ...form, images: form.images.filter((_, i) => i !== idx) });
+                          }}
+                          folder="bundles"
+                          aspectRatio="auto"
+                          label={`Image ${idx + 2}`}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {form.images.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, images: [...form.images, ""] })}
+                      className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1.5"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Add another image ({form.images.length}/5)
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
