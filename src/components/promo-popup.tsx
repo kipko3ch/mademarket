@@ -39,11 +39,15 @@ export function PromoPopup() {
             <div className="relative rounded-2xl bg-white text-slate-900 p-5 shadow-2xl ring-1 ring-slate-900/5 font-sans overflow-hidden">
                 {/* Close button */}
                 <button
-                    onClick={handleDismiss}
-                    className="absolute top-3 right-3 h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-all z-10"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDismiss();
+                    }}
+                    className="absolute top-3 right-3 h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-all z-[70] cursor-pointer shadow-sm border border-slate-200"
                     aria-label="Close promotion"
                 >
-                    <X className="h-3.5 w-3.5 text-slate-500 stroke-[2.5]" />
+                    <X className="h-4 w-4 text-slate-500 stroke-[2.5]" />
                 </button>
 
                 <div className="relative z-10 pr-6">

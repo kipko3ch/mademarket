@@ -63,17 +63,24 @@ export default function StoreProfilePage({
   useEffect(() => {
     async function fetchStore() {
       try {
-        const [storeRes, productsRes, brochuresRes] = await Promise.all([
-          fetch(`/api/stores/${id}`),
-          fetch(`/api/stores/${id}/products`),
-          fetch(`/api/brochures?storeId=${id}`),
+        // Fetch store first to resolve slug → UUID
+        const storeRes = await fetch(`/api/stores/${id}`);
+        if (!storeRes.ok) return;
+
+        const storeData = await storeRes.json();
+        setStore(storeData);
+
+        // Use resolved UUID for subsequent fetches
+        const resolvedId = storeData.id;
+        const [productsRes, brochuresRes] = await Promise.all([
+          fetch(`/api/stores/${resolvedId}/products`),
+          fetch(`/api/brochures?storeId=${resolvedId}`),
         ]);
 
-        if (storeRes.ok) setStore(await storeRes.json());
         if (productsRes.ok) setProducts(await productsRes.json());
         if (brochuresRes.ok) {
           const data = await brochuresRes.json();
-          setBrochures(data.brochures || []);
+          setBrochures(Array.isArray(data) ? data : data.brochures || []);
         }
       } catch {
       } finally {

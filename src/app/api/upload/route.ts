@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { storeProducts, products, stores, priceHistory } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { normalizeProductName, extractProductMeta, slugify } from "@/lib/utils";
 import * as XLSX from "xlsx";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +49,9 @@ export async function POST(req: NextRequest) {
       price: number;
       bundle_info?: string;
       unit?: string;
+      barcode?: string;
+      brand?: string;
+      size?: string;
     }>(sheet);
 
     if (rows.length === 0) {
@@ -68,6 +72,8 @@ export async function POST(req: NextRequest) {
       total: rows.length,
       created: 0,
       updated: 0,
+      autoMatched: 0,
+      newProducts: 0,
       errors: [] as { row: number; error: string }[],
     };
 
@@ -91,40 +97,100 @@ export async function POST(req: NextRequest) {
         }
 
         try {
-          const normalizedName = row.product_name.toLowerCase().trim();
+          const normalized = normalizeProductName(row.product_name);
+          const meta = extractProductMeta(row.product_name);
+          const slug = slugify(row.product_name);
+          const rowBarcode = row.barcode ? String(row.barcode).trim() : null;
 
-          // Find or create product
-          let [product] = await db
-            .select({ id: products.id })
-            .from(products)
-            .where(eq(products.normalizedName, normalizedName))
-            .limit(1);
+          // Multi-strategy matching — same pattern as POST /api/products:
+          // 1. Exact barcode match (highest confidence)
+          // 2. Exact normalized name match OR slug match
+          let existing = null;
+          let matchStatus: "linked" | "auto_matched" | "not_linked" = "not_linked";
 
-          if (!product) {
-            [product] = await db
+          if (rowBarcode) {
+            const [byBarcode] = await db
+              .select()
+              .from(products)
+              .where(eq(products.barcode, rowBarcode))
+              .limit(1);
+            if (byBarcode) {
+              existing = byBarcode;
+              matchStatus = "linked";
+            }
+          }
+
+          if (!existing) {
+            const [byNameOrSlug] = await db
+              .select()
+              .from(products)
+              .where(or(
+                eq(products.normalizedName, normalized),
+                eq(products.slug, slug)
+              ))
+              .limit(1);
+            if (byNameOrSlug) {
+              existing = byNameOrSlug;
+              matchStatus = "auto_matched";
+            }
+          }
+
+          let productId: string;
+
+          if (existing) {
+            productId = existing.id;
+
+            // Update missing fields on the core product if we have them
+            const updates: Record<string, unknown> = {};
+            if (!existing.imageUrl && row.bundle_info) { /* no image from Excel */ }
+            if (!existing.brand && (row.brand || meta.brand)) updates.brand = row.brand || meta.brand;
+            if (!existing.size && (row.size || meta.size)) updates.size = row.size || meta.size;
+            if (!existing.barcode && rowBarcode) updates.barcode = rowBarcode;
+            if (!existing.slug) updates.slug = slug;
+            if (!existing.unit && row.unit) updates.unit = row.unit;
+
+            if (Object.keys(updates).length > 0) {
+              await db
+                .update(products)
+                .set(updates)
+                .where(eq(products.id, existing.id));
+            }
+
+            results.autoMatched++;
+          } else {
+            // Create new product with full normalized data
+            const [newProduct] = await db
               .insert(products)
               .values({
                 name: row.product_name.trim(),
-                normalizedName,
+                normalizedName: normalized,
+                slug,
+                brand: row.brand || meta.brand || null,
+                size: row.size || meta.size || null,
+                barcode: rowBarcode,
                 unit: row.unit || null,
               })
               .returning({ id: products.id });
+
+            productId = newProduct.id;
+            matchStatus = "not_linked";
+            results.newProducts++;
           }
 
           // Check for existing store product
-          const [existing] = await db
+          const [existingStoreProduct] = await db
             .select({ id: storeProducts.id, price: storeProducts.price })
             .from(storeProducts)
             .where(
               and(
                 eq(storeProducts.storeId, storeId),
-                eq(storeProducts.productId, product.id)
+                eq(storeProducts.productId, productId)
               )
             )
             .limit(1);
 
-          if (existing) {
-            const oldPrice = Number(existing.price);
+          if (existingStoreProduct) {
+            const oldPrice = Number(existingStoreProduct.price);
             const newPrice = Number(row.price);
 
             await db
@@ -132,13 +198,14 @@ export async function POST(req: NextRequest) {
               .set({
                 price: String(newPrice),
                 bundleInfo: row.bundle_info || null,
+                matchStatus,
                 updatedAt: new Date(),
               })
-              .where(eq(storeProducts.id, existing.id));
+              .where(eq(storeProducts.id, existingStoreProduct.id));
 
             if (oldPrice !== newPrice) {
               await db.insert(priceHistory).values({
-                storeProductId: existing.id,
+                storeProductId: existingStoreProduct.id,
                 oldPrice: String(oldPrice),
                 newPrice: String(newPrice),
               });
@@ -148,9 +215,10 @@ export async function POST(req: NextRequest) {
           } else {
             await db.insert(storeProducts).values({
               storeId,
-              productId: product.id,
+              productId,
               price: String(row.price),
               bundleInfo: row.bundle_info || null,
+              matchStatus,
             });
 
             results.created++;

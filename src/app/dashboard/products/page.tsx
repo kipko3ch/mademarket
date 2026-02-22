@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Edit2, Package, PlusCircle, ImageIcon } from "lucide-react";
+import { Plus, Edit2, Package, PlusCircle, ImageIcon, Link2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -39,6 +39,7 @@ interface StoreProduct {
   price: string;
   bundleInfo: string | null;
   inStock: boolean;
+  matchStatus: "linked" | "auto_matched" | "not_linked";
 }
 
 interface Category {
@@ -98,6 +99,12 @@ export default function DashboardProductsPage() {
     imageUrl: "",
   });
   const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // Link search state (for changing/linking product in edit dialog)
+  const [linkSearchOpen, setLinkSearchOpen] = useState(false);
+  const [linkSearchQuery, setLinkSearchQuery] = useState("");
+  const [linkSearchResults, setLinkSearchResults] = useState<ExistingProduct[]>([]);
+  const [linkSearching, setLinkSearching] = useState(false);
 
   // Search existing products in the platform
   async function handleSearch(query: string) {
@@ -333,6 +340,65 @@ export default function DashboardProductsPage() {
       toast.error("Something went wrong");
     } finally {
       setEditSubmitting(false);
+    }
+  }
+
+  async function handleLinkSearch(query: string) {
+    setLinkSearchQuery(query);
+    if (query.trim().length < 2) {
+      setLinkSearchResults([]);
+      return;
+    }
+    setLinkSearching(true);
+    try {
+      const res = await fetch(`/api/products?search=${encodeURIComponent(query.trim())}&pageSize=8`);
+      if (res.ok) {
+        const data = await res.json();
+        setLinkSearchResults(data.data || []);
+      }
+    } catch {} finally {
+      setLinkSearching(false);
+    }
+  }
+
+  async function handleLinkProduct(targetProductId: string) {
+    if (!editProduct || !storeId) return;
+    try {
+      const res = await fetch(`/api/stores/${storeId}/products/${editProduct.id}/link`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: targetProductId }),
+      });
+      if (res.ok) {
+        toast.success("Product linked successfully");
+        setLinkSearchOpen(false);
+        setEditDialogOpen(false);
+        await refreshProducts();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to link product");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    }
+  }
+
+  async function handleUnlinkProduct() {
+    if (!editProduct || !storeId) return;
+    try {
+      const res = await fetch(`/api/stores/${storeId}/products/${editProduct.id}/link`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        toast.success("Product unlinked");
+        setEditDialogOpen(false);
+        await refreshProducts();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to unlink product");
+      }
+    } catch {
+      toast.error("Something went wrong");
     }
   }
 
@@ -643,65 +709,193 @@ export default function DashboardProductsPage() {
 
       {/* Edit Product Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
-            <DialogDescription>Update product details, image, and price.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleEditProduct} className="space-y-4">
-            {/* Product Image */}
-            <div className="space-y-2">
-              <Label>Product Image</Label>
-              <ImageUpload
-                value={editForm.imageUrl}
-                onChange={(url) => setEditForm({ ...editForm, imageUrl: url })}
-                onRemove={() => setEditForm({ ...editForm, imageUrl: "" })}
-                folder="products"
-                aspectRatio="square"
-                label="Product Image"
-              />
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
+          {/* Sticky header */}
+          <div className="sticky top-0 z-10 bg-background border-b px-6 pt-6 pb-4">
+            <DialogHeader>
+              <DialogTitle>Edit Product</DialogTitle>
+              <DialogDescription>Update product details, image, and price.</DialogDescription>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable content */}
+          <form onSubmit={handleEditProduct} className="flex flex-col flex-1 min-h-0">
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+              {/* Product Linking Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-700">Product Linking</h3>
+                  {editProduct && (
+                    <Badge
+                      variant={editProduct.matchStatus === "linked" ? "default" : editProduct.matchStatus === "auto_matched" ? "outline" : "secondary"}
+                      className={
+                        editProduct.matchStatus === "linked"
+                          ? "bg-green-100 text-green-800 hover:bg-green-100"
+                          : editProduct.matchStatus === "auto_matched"
+                          ? "bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200"
+                          : "bg-red-100 text-red-800 hover:bg-red-100"
+                      }
+                    >
+                      {editProduct.matchStatus === "linked" ? "Linked" : editProduct.matchStatus === "auto_matched" ? "Auto Matched" : "Not Linked"}
+                    </Badge>
+                  )}
+                </div>
+                {editProduct?.matchStatus === "auto_matched" && (
+                  <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
+                    This product was auto-matched during Excel upload. Please verify the link is correct or search for a different product.
+                  </p>
+                )}
+                {editProduct?.matchStatus === "not_linked" && (
+                  <p className="text-xs text-red-600 bg-red-50 p-2 rounded-lg">
+                    This product is not linked to any core product. Link it to enable price comparison across stores.
+                  </p>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={() => {
+                    setLinkSearchOpen(true);
+                    setLinkSearchQuery("");
+                    setLinkSearchResults([]);
+                  }}
+                >
+                  {editProduct?.matchStatus === "not_linked" ? "Link to Existing Product" : "Change Linked Product"}
+                </Button>
+              </div>
+
+              <hr className="border-slate-100" />
+
+              {/* Image Section */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-slate-700">Product Image</h3>
+                <ImageUpload
+                  value={editForm.imageUrl}
+                  onChange={(url) => setEditForm({ ...editForm, imageUrl: url })}
+                  onRemove={() => setEditForm({ ...editForm, imageUrl: "" })}
+                  folder="products"
+                  aspectRatio="square"
+                  label="Product Image"
+                />
+              </div>
+
+              <hr className="border-slate-100" />
+
+              {/* Details Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-700">Product Details</h3>
+                <div className="space-y-2">
+                  <Label>Product Name *</Label>
+                  <Input
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Price (N$) *</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editForm.price}
+                    onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Unit</Label>
+                    <Input
+                      placeholder="kg, litre, pack"
+                      value={editForm.unit}
+                      onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Bundle Info</Label>
+                    <Input
+                      placeholder="e.g., Pack of 6"
+                      value={editForm.bundleInfo}
+                      onChange={(e) => setEditForm({ ...editForm, bundleInfo: e.target.value })}
+                      />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Product Name *</Label>
-              <Input
-                value={editForm.name}
-                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                required
-              />
+            {/* Sticky footer */}
+            <div className="sticky bottom-0 bg-background border-t px-6 py-4 flex gap-3">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="flex-1" disabled={editSubmitting}>
+                {editSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label>Price (N$) *</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={editForm.price}
-                onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Unit</Label>
-                <Input
-                  placeholder="kg, litre, pack"
-                  value={editForm.unit}
-                  onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Bundle Info</Label>
-                <Input
-                  placeholder="e.g., Pack of 6"
-                  value={editForm.bundleInfo}
-                  onChange={(e) => setEditForm({ ...editForm, bundleInfo: e.target.value })}
-                />
-              </div>
-            </div>
-            <Button type="submit" className="w-full" disabled={editSubmitting}>
-              {editSubmitting ? "Saving..." : "Save Changes"}
-            </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link Product Search Dialog */}
+      <Dialog open={linkSearchOpen} onOpenChange={setLinkSearchOpen}>
+        <DialogContent className="max-w-md max-h-[80vh] flex flex-col p-0">
+          <div className="px-6 pt-6 pb-3 border-b">
+            <DialogHeader>
+              <DialogTitle>Link to Product</DialogTitle>
+              <DialogDescription>Search for an existing product to link to. This enables price comparison.</DialogDescription>
+            </DialogHeader>
+            <div className="mt-3">
+              <Input
+                placeholder="Search products..."
+                value={linkSearchQuery}
+                onChange={(e) => handleLinkSearch(e.target.value)}
+                autoFocus
+              />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-3 space-y-2">
+            {linkSearching && <p className="text-xs text-slate-400 py-2">Searching...</p>}
+            {linkSearchResults.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => handleLinkProduct(p.id)}
+                className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 hover:border-primary/30 hover:bg-primary/5 transition-colors text-left"
+              >
+                <div className="h-10 w-10 rounded-lg bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center">
+                  {p.imageUrl ? (
+                    <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <ImageIcon className="h-4 w-4 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 truncate">{p.name}</p>
+                  <p className="text-[10px] text-slate-400">
+                    {p.storeCount} {p.storeCount === 1 ? "store" : "stores"}
+                    {p.minPrice ? ` · from N$ ${Number(p.minPrice).toFixed(2)}` : ""}
+                  </p>
+                </div>
+              </button>
+            ))}
+            {linkSearchQuery.length >= 2 && !linkSearching && linkSearchResults.length === 0 && (
+              <p className="text-xs text-slate-400 text-center py-4">No products found</p>
+            )}
+          </div>
+          {editProduct?.matchStatus !== "not_linked" && (
+            <div className="border-t px-6 py-3">
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="w-full text-xs"
+                onClick={handleUnlinkProduct}
+              >
+                Unlink Product
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -739,6 +933,21 @@ export default function DashboardProductsPage() {
                     className="text-[10px] shadow-sm"
                   >
                     {p.inStock ? "In Stock" : "Out of Stock"}
+                  </Badge>
+                </div>
+                {/* Match status badge */}
+                <div className="absolute top-2 left-2">
+                  <Badge
+                    variant="secondary"
+                    className={
+                      p.matchStatus === "linked"
+                        ? "bg-green-100 text-green-700 text-[10px] shadow-sm"
+                        : p.matchStatus === "auto_matched"
+                        ? "bg-amber-100 text-amber-700 text-[10px] shadow-sm"
+                        : "bg-red-100 text-red-700 text-[10px] shadow-sm"
+                    }
+                  >
+                    {p.matchStatus === "linked" ? "\u2713 Linked" : p.matchStatus === "auto_matched" ? "\u26A1 Auto" : "\u2717 Not Linked"}
                   </Badge>
                 </div>
               </div>

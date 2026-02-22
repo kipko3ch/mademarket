@@ -53,7 +53,7 @@ export function CartDrawer() {
           for (const p of data.data) names[p.id] = p.name;
           setProductNames(names);
         }
-      } catch {}
+      } catch { }
     }
     fetchNames();
   }, [items]);

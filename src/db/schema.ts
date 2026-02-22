@@ -137,6 +137,11 @@ export const storeProducts = pgTable(
     brochureUrl: text("brochure_url"),
     externalUrl: text("external_url"),
     inStock: boolean("in_stock").notNull().default(true),
+    matchStatus: text("match_status", {
+      enum: ["linked", "auto_matched", "not_linked"],
+    })
+      .notNull()
+      .default("linked"),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [

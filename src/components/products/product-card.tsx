@@ -101,7 +101,7 @@ export function ProductCard({
 
         {/* Cart Button - Overlapping the bottom-right corner */}
         <button
-          className="absolute -bottom-2 -right-1 h-11 w-11 sm:h-13 sm:w-13 flex items-center justify-center bg-primary text-white border-2 border-white hover:bg-primary/90 rounded-2xl transition-all group/cart shadow-xl active:scale-95 z-20"
+          className="absolute -bottom-2 -right-1 h-9 w-9 sm:h-11 sm:w-11 flex items-center justify-center bg-primary text-white border-2 border-white hover:bg-primary/90 rounded-2xl transition-all group/cart shadow-xl active:scale-95 z-20"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -114,7 +114,7 @@ export function ProductCard({
             addItem(id, name, imageUrl);
           }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="sm:w-6 sm:h-6">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="sm:w-5 sm:h-5">
             <path d="M12 5v14" />
             <path d="M5 12h14" />
           </svg>

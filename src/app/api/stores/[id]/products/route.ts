@@ -7,14 +7,32 @@ import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/stores/[id]/products — Get all products for a store
+// UUID v4 format regex
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// GET /api/stores/[id]/products — Get all products for a store (accepts UUID or slug)
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: storeId } = await params;
+  const { id } = await params;
 
   try {
+    // Resolve slug to UUID if needed
+    let storeId = id;
+    if (!UUID_REGEX.test(id)) {
+      const [found] = await db
+        .select({ id: stores.id })
+        .from(stores)
+        .where(eq(stores.slug, id))
+        .limit(1);
+      if (!found) {
+        return NextResponse.json([], { status: 200 });
+      }
+      storeId = found.id;
+    }
+
     const storeProductList = await db
       .select({
         id: storeProducts.id,
@@ -26,6 +44,7 @@ export async function GET(
         bundleInfo: storeProducts.bundleInfo,
         brochureUrl: storeProducts.brochureUrl,
         inStock: storeProducts.inStock,
+        matchStatus: storeProducts.matchStatus,
         updatedAt: storeProducts.updatedAt,
       })
       .from(storeProducts)
