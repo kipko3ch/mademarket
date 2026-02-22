@@ -21,7 +21,7 @@ export async function GET() {
   }
 }
 
-// POST /api/categories — Create category (admin only)
+// POST /api/categories — Create category (admin or vendor)
 const createCategorySchema = z.object({
   name: z.string().min(1),
   imageUrl: z.string().optional(),
@@ -29,7 +29,7 @@ const createCategorySchema = z.object({
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "admin") {
+  if (!session?.user || !["admin", "vendor"].includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

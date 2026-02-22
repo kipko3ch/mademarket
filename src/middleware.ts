@@ -6,20 +6,35 @@ export default auth((req) => {
   const user = req.auth?.user;
 
   // Public routes - no auth required
-  const publicPaths = ["/", "/login", "/register", "/products", "/compare", "/cart", "/store", "/privacy", "/terms", "/about", "/contact", "/api/auth"];
+  const publicPaths = ["/", "/login", "/register", "/products", "/compare", "/cart", "/store", "/privacy", "/terms", "/about", "/contact", "/api/auth", "/api/seed-admin", "/auth/redirect"];
   const isPublic = publicPaths.some(
     (path) => pathname === path || pathname.startsWith(path + "/")
   );
   if (isPublic) return NextResponse.next();
 
   // API routes for public access
-  if (pathname.startsWith("/api/products") && req.method === "GET") {
+  if (pathname.startsWith("/api/products")) {
     return NextResponse.next();
   }
   if (pathname.startsWith("/api/compare") && req.method === "GET") {
     return NextResponse.next();
   }
   if (pathname.startsWith("/api/stores") && req.method === "GET") {
+    return NextResponse.next();
+  }
+  if (pathname.startsWith("/api/bundles") && req.method === "GET") {
+    return NextResponse.next();
+  }
+  if (pathname.startsWith("/api/featured") && req.method === "GET") {
+    return NextResponse.next();
+  }
+  if (pathname.startsWith("/api/categories")) {
+    return NextResponse.next();
+  }
+  if (pathname.startsWith("/api/cart")) {
+    return NextResponse.next();
+  }
+  if (pathname.startsWith("/api/banners") && req.method === "GET") {
     return NextResponse.next();
   }
 

@@ -19,6 +19,12 @@ export async function GET() {
         id: stores.id,
         name: stores.name,
         approved: stores.approved,
+        description: stores.description,
+        address: stores.address,
+        whatsappNumber: stores.whatsappNumber,
+        logoUrl: stores.logoUrl,
+        bannerUrl: stores.bannerUrl,
+        websiteUrl: stores.websiteUrl,
       })
       .from(stores)
       .where(eq(stores.ownerId, session.user.id))

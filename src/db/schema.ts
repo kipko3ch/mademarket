@@ -41,9 +41,13 @@ export const stores = pgTable("stores", {
   slug: text("slug").notNull().unique(),
   description: text("description"),
   logoUrl: text("logo_url"),
+  bannerUrl: text("banner_url"),
+  websiteUrl: text("website_url"),
   whatsappNumber: text("whatsapp_number"),
   address: text("address"),
   approved: boolean("approved").notNull().default(false),
+  showInMarquee: boolean("show_in_marquee").notNull().default(false),
+  marqueeOrder: integer("marquee_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -54,6 +58,8 @@ export const storesRelations = relations(stores, ({ one, many }) => ({
   }),
   storeProducts: many(storeProducts),
   sponsoredListings: many(sponsoredListings),
+  bundles: many(bundles),
+  brochures: many(brochures),
 }));
 
 // ─── Categories ──────────────────────────────────────────────────────────────
@@ -70,7 +76,7 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
 }));
 
-// ─── Products ────────────────────────────────────────────────────────────────
+// ─── Products (Core Product — one per real-world product) ─────────────────────
 
 export const products = pgTable(
   "products",
@@ -78,6 +84,11 @@ export const products = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
     normalizedName: text("normalized_name").notNull(),
+    slug: text("slug"),
+    brand: text("brand"),
+    size: text("size"), // e.g., "10kg", "500ml", "6 pack"
+    barcode: text("barcode"),
+    description: text("description"),
     categoryId: uuid("category_id").references(() => categories.id, {
       onDelete: "set null",
     }),
@@ -88,6 +99,8 @@ export const products = pgTable(
   (table) => [
     index("idx_products_category").on(table.categoryId),
     index("idx_products_normalized_name").on(table.normalizedName),
+    index("idx_products_slug").on(table.slug),
+    index("idx_products_barcode").on(table.barcode),
   ]
 );
 
@@ -114,6 +127,7 @@ export const storeProducts = pgTable(
     price: decimal("price", { precision: 10, scale: 2 }).notNull(),
     bundleInfo: text("bundle_info"),
     brochureUrl: text("brochure_url"),
+    externalUrl: text("external_url"),
     inStock: boolean("in_stock").notNull().default(true),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -274,3 +288,146 @@ export const verificationTokens = pgTable(
     uniqueIndex("idx_verification_tokens").on(table.identifier, table.token),
   ]
 );
+
+// ─── Hero Banners ─────────────────────────────────────────────────────────────
+
+export const heroBanners = pgTable("hero_banners", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: text("title").notNull(),
+  subtitle: text("subtitle"),
+  ctaText: text("cta_text"),
+  ctaUrl: text("cta_url"),
+  imageUrl: text("image_url").notNull(),
+  bgColor: text("bg_color").default("#f0f4ff"),
+  active: boolean("active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Featured Products (Admin-controlled) ────────────────────────────────────
+
+export const featuredProducts = pgTable(
+  "featured_products",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    priority: text("priority", { enum: ["premium", "standard"] })
+      .notNull()
+      .default("standard"),
+    durationDays: integer("duration_days").notNull().default(7),
+    startsAt: timestamp("starts_at").defaultNow().notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_featured_active").on(table.active, table.expiresAt),
+    index("idx_featured_product").on(table.productId),
+  ]
+);
+
+export const featuredProductsRelations = relations(featuredProducts, ({ one }) => ({
+  product: one(products, {
+    fields: [featuredProducts.productId],
+    references: [products.id],
+  }),
+}));
+
+// ─── Product Clicks (for popular products tracking) ──────────────────────────
+
+export const productClicks = pgTable(
+  "product_clicks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_product_clicks_product").on(table.productId),
+    index("idx_product_clicks_created").on(table.createdAt),
+  ]
+);
+
+export const productClicksRelations = relations(productClicks, ({ one }) => ({
+  product: one(products, {
+    fields: [productClicks.productId],
+    references: [products.id],
+  }),
+}));
+
+// ─── Bundles ─────────────────────────────────────────────────────────────────
+
+export const bundles = pgTable(
+  "bundles",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    storeId: uuid("store_id")
+      .notNull()
+      .references(() => stores.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    slug: text("slug"),
+    description: text("description"),
+    imageUrl: text("image_url"),
+    price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+    externalUrl: text("external_url"),
+    items: text("items"), // JSON string of included product names/descriptions
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_bundles_store").on(table.storeId),
+    index("idx_bundles_active").on(table.active),
+  ]
+);
+
+export const bundlesRelations = relations(bundles, ({ one }) => ({
+  store: one(stores, {
+    fields: [bundles.storeId],
+    references: [stores.id],
+  }),
+}));
+
+// ─── Brochures ──────────────────────────────────────────────────────────────
+
+export const brochures = pgTable(
+  "brochures",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    storeId: uuid("store_id")
+      .notNull()
+      .references(() => stores.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    slug: text("slug").notNull(),
+    description: text("description"),
+    bannerImageUrl: text("banner_image_url"),
+    thumbnailImageUrl: text("thumbnail_image_url"),
+    status: text("status", { enum: ["draft", "published"] })
+      .notNull()
+      .default("draft"),
+    validFrom: timestamp("valid_from"),
+    validUntil: timestamp("valid_until"),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_brochures_store").on(table.storeId),
+    index("idx_brochures_status").on(table.status),
+    uniqueIndex("idx_brochures_slug").on(table.slug),
+  ]
+);
+
+export const brochuresRelations = relations(brochures, ({ one }) => ({
+  store: one(stores, {
+    fields: [brochures.storeId],
+    references: [stores.id],
+  }),
+  creator: one(users, {
+    fields: [brochures.createdBy],
+    references: [users.id],
+  }),
+}));
+

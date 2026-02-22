@@ -1,6 +1,7 @@
 "use client";
 
 import { ProductCard } from "./product-card";
+import { Package } from "lucide-react";
 
 interface ProductData {
   id: string;
@@ -30,15 +31,20 @@ interface ProductGridProps {
 export function ProductGrid({ products, sponsored = [] }: ProductGridProps) {
   if (products.length === 0 && sponsored.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        <p className="text-lg">No products found</p>
-        <p className="text-sm mt-1">Try adjusting your filters</p>
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="h-20 w-20 rounded-2xl bg-muted flex items-center justify-center mb-4">
+          <Package className="h-10 w-10 text-muted-foreground" />
+        </div>
+        <p className="text-lg font-medium">No products found</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Try adjusting your search or filters
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
       {/* Sponsored products first */}
       {sponsored.map((item) => (
         <ProductCard
@@ -52,6 +58,7 @@ export function ProductGrid({ products, sponsored = [] }: ProductGridProps) {
           maxPrice={null}
           storeCount={1}
           sponsored
+          storeName={item.storeName}
         />
       ))}
       {/* Organic results */}

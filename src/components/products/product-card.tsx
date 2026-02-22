@@ -1,11 +1,12 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import Image from "next/image";
-import { ShoppingCart, TrendingDown, Store } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { Heart } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
+import { useSaved } from "@/hooks/use-saved";
+import { formatCurrency } from "@/lib/currency";
+import { cn, productUrl } from "@/lib/utils";
 
 interface ProductCardProps {
   id: string;
@@ -17,6 +18,8 @@ interface ProductCardProps {
   maxPrice: number | null;
   storeCount: number;
   sponsored?: boolean;
+  storeLogo?: string | null;
+  storeName?: string | null;
 }
 
 export function ProductCard({
@@ -29,75 +32,110 @@ export function ProductCard({
   maxPrice,
   storeCount,
   sponsored,
+  storeLogo,
+  storeName,
 }: ProductCardProps) {
   const addItem = useCart((s) => s.addItem);
+  const toggleSaved = useSaved((s) => s.toggleSaved);
+  const isSavedInStore = useSaved((s) => s.savedIds.includes(id));
+  const hasHydrated = useSaved((s) => s._hasHydrated);
 
-  const hasPriceRange = minPrice && maxPrice && minPrice !== maxPrice;
+  const saved = hasHydrated ? isSavedInStore : false;
 
   return (
-    <Card className="group overflow-hidden hover:shadow-md transition-shadow">
-      <div className="relative aspect-square bg-muted/50">
+    <div className="group bg-white border border-primary/5 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
+      {/* Image */}
+      <Link
+        href={productUrl(id, name)}
+        onClick={() => { fetch(`/api/products/${id}/click`, { method: "POST" }).catch(() => {}); }}
+        className="relative block mb-2.5 sm:mb-4 aspect-square rounded-lg sm:rounded-xl overflow-hidden bg-slate-50"
+      >
         {imageUrl ? (
-          <Image
+          <img
             src={imageUrl}
             alt={name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 50vw, 25vw"
+            className="w-full h-full object-contain p-3 sm:p-4 group-hover:scale-110 transition-transform duration-500"
             loading="lazy"
           />
         ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <Store className="h-12 w-12" />
+          <div className="flex items-center justify-center h-full p-6">
+            <img
+              src="/icons/productplaceholder.png"
+              alt="Placeholder"
+              className="max-h-[60%] max-w-[60%] object-contain opacity-50"
+            />
           </div>
         )}
+
+        {/* Sponsored badge */}
         {sponsored && (
-          <Badge className="absolute top-2 left-2 bg-yellow-500 text-white text-xs">
+          <span className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 bg-amber-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 sm:px-2.5 py-0.5 rounded-full z-10">
             Sponsored
-          </Badge>
+          </span>
         )}
-        {hasPriceRange && (
-          <Badge variant="secondary" className="absolute top-2 right-2 text-xs">
-            <TrendingDown className="h-3 w-3 mr-1" />
-            Compare
-          </Badge>
+
+        {/* Like button */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSaved(id);
+          }}
+          className={cn(
+            "absolute top-1.5 right-1.5 sm:top-2 sm:right-2 p-1.5 sm:p-2 rounded-full shadow-sm transition-colors z-10",
+            saved
+              ? "bg-red-500 text-white"
+              : "bg-white/80 backdrop-blur text-slate-400 hover:text-red-500"
+          )}
+        >
+          <Heart className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", saved && "fill-current")} />
+        </button>
+      </Link>
+
+      {/* Product info */}
+      <div className="space-y-0.5 sm:space-y-1 mb-2.5 sm:mb-4">
+        <Link href={productUrl(id, name)}>
+          <h4 className="font-semibold text-xs sm:text-sm text-slate-800 truncate group-hover:text-primary transition-colors">
+            {name}
+          </h4>
+        </Link>
+        {storeCount > 0 && (
+          <span className="text-[10px] sm:text-xs text-slate-500 block">
+            {storeCount} {storeCount === 1 ? "store" : "stores"}
+          </span>
         )}
       </div>
-      <CardContent className="p-4 space-y-2">
-        {categoryName && (
-          <p className="text-xs text-muted-foreground">{categoryName}</p>
-        )}
-        <h3 className="font-medium text-sm line-clamp-2">{name}</h3>
-        {unit && <p className="text-xs text-muted-foreground">per {unit}</p>}
 
-        <div className="flex items-center justify-between pt-1">
-          <div>
-            {minPrice ? (
-              <div>
-                <span className="text-lg font-bold">${Number(minPrice).toFixed(2)}</span>
-                {hasPriceRange && (
-                  <span className="text-xs text-muted-foreground ml-1">
-                    — ${Number(maxPrice).toFixed(2)}
-                  </span>
-                )}
-              </div>
-            ) : (
-              <span className="text-sm text-muted-foreground">No price listed</span>
-            )}
-            <p className="text-xs text-muted-foreground">
-              {storeCount} {storeCount === 1 ? "store" : "stores"}
-            </p>
-          </div>
-          <Button
-            size="icon"
-            variant="outline"
-            className="h-8 w-8"
-            onClick={() => addItem(id)}
-          >
-            <ShoppingCart className="h-4 w-4" />
-          </Button>
+      {/* Price + cart row */}
+      <div className="flex items-end justify-between">
+        <div>
+          {minPrice ? (
+            <>
+              <p className="text-[8px] sm:text-[10px] uppercase font-bold text-primary/60 leading-none">
+                {storeCount > 1 ? "From" : "Price"}
+              </p>
+              <p className="text-lg sm:text-2xl font-bold text-primary">
+                {formatCurrency(minPrice)}
+              </p>
+            </>
+          ) : (
+            <p className="text-xs sm:text-sm text-slate-400">No price</p>
+          )}
         </div>
-      </CardContent>
-    </Card>
+        <button
+          className="bg-primary/10 hover:bg-primary p-2 sm:p-2.5 rounded-lg sm:rounded-xl transition-all group/cart"
+          onClick={(e) => {
+            e.preventDefault();
+            addItem(id, name, imageUrl);
+          }}
+        >
+          <img
+            src="/icons/cart.png"
+            alt="Cart"
+            className="h-4 w-4 sm:h-5 sm:w-5 object-contain group-hover/cart:brightness-0 group-hover/cart:invert transition-all"
+          />
+        </button>
+      </div>
+    </div>
   );
 }

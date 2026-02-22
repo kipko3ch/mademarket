@@ -14,16 +14,38 @@ export async function PATCH(
   const { id } = await params;
   const session = await auth();
 
-  if (!session?.user || session.user.role !== "admin") {
+  // Allow admin or vendor (vendors can update their own store)
+  if (!session?.user || (session.user.role !== "admin" && session.user.role !== "vendor")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const { approved } = await req.json();
+    const body = await req.json();
+    const updateData: Record<string, unknown> = {};
+
+    // Admin-only fields
+    if (session.user.role === "admin") {
+      if ("approved" in body) updateData.approved = Boolean(body.approved);
+      if ("showInMarquee" in body) updateData.showInMarquee = Boolean(body.showInMarquee);
+      if ("marqueeOrder" in body) updateData.marqueeOrder = Number(body.marqueeOrder);
+    }
+
+    // Fields editable by both admin and vendor
+    if ("name" in body) updateData.name = body.name;
+    if ("description" in body) updateData.description = body.description || null;
+    if ("address" in body) updateData.address = body.address || null;
+    if ("whatsappNumber" in body) updateData.whatsappNumber = body.whatsappNumber || null;
+    if ("logoUrl" in body) updateData.logoUrl = body.logoUrl || null;
+    if ("bannerUrl" in body) updateData.bannerUrl = body.bannerUrl || null;
+    if ("websiteUrl" in body) updateData.websiteUrl = body.websiteUrl || null;
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+    }
 
     const [updated] = await db
       .update(stores)
-      .set({ approved: Boolean(approved) })
+      .set(updateData)
       .where(eq(stores.id, id))
       .returning();
 

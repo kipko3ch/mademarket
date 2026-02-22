@@ -62,16 +62,23 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Verify store ownership
+  // Verify store ownership and approval
   if (session.user.role === "vendor") {
     const [store] = await db
-      .select({ ownerId: stores.ownerId })
+      .select({ ownerId: stores.ownerId, approved: stores.approved })
       .from(stores)
       .where(eq(stores.id, storeId))
       .limit(1);
 
     if (!store || store.ownerId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (!store.approved) {
+      return NextResponse.json(
+        { error: "Store must be approved before you can perform this action. Contact admin: +264818222368" },
+        { status: 403 }
+      );
     }
   }
 

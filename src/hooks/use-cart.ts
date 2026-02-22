@@ -8,7 +8,7 @@ interface CartStore {
   items: CartItem[];
   calculation: CartCalculation | null;
   loading: boolean;
-  addItem: (productId: string) => void;
+  addItem: (productId: string, productName?: string, productImage?: string | null) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -22,7 +22,7 @@ export const useCart = create<CartStore>()(
       calculation: null,
       loading: false,
 
-      addItem: (productId: string) => {
+      addItem: (productId: string, productName?: string, productImage?: string | null) => {
         const { items } = get();
         const existing = items.find((i) => i.productId === productId);
 
@@ -37,7 +37,7 @@ export const useCart = create<CartStore>()(
           });
         } else {
           set({
-            items: [...items, { productId, quantity: 1 }],
+            items: [...items, { productId, productName, productImage, quantity: 1 }],
             calculation: null,
           });
         }

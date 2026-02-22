@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { storeProducts, products, stores, categories } from "@/db/schema";
-import { eq, and, inArray, ilike } from "drizzle-orm";
+import { eq, and, inArray, ilike, or } from "drizzle-orm";
+import { normalizeProductName } from "@/lib/utils";
 import type { CompareResult } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,13 @@ export async function GET(req: NextRequest) {
     ];
 
     if (search) {
-      conditions.push(ilike(products.normalizedName, `%${search.toLowerCase()}%`));
+      const normalizedSearch = normalizeProductName(search);
+      conditions.push(
+        or(
+          ilike(products.normalizedName, `%${normalizedSearch}%`),
+          ilike(products.name, `%${search}%`)
+        )!
+      );
     }
 
     if (category) {
@@ -38,10 +45,12 @@ export async function GET(req: NextRequest) {
     }
 
     // Single query: get all prices for selected stores
+    // Now includes productImage for display
     const rows = await db
       .select({
         productId: products.id,
         productName: products.name,
+        productImage: products.imageUrl,
         categoryName: categories.name,
         storeId: stores.id,
         storeName: stores.name,
@@ -54,7 +63,8 @@ export async function GET(req: NextRequest) {
       .where(and(...conditions))
       .orderBy(products.name, stores.name);
 
-    // Group by product
+    // Group by product — since products table is the canonical source,
+    // products with the same ID are guaranteed to be the same real-world item
     const productMap = new Map<string, CompareResult>();
 
     for (const row of rows) {
@@ -62,6 +72,7 @@ export async function GET(req: NextRequest) {
         productMap.set(row.productId, {
           productId: row.productId,
           productName: row.productName,
+          productImage: row.productImage,
           category: row.categoryName || "Uncategorized",
           prices: [],
         });
@@ -91,6 +102,13 @@ export async function GET(req: NextRequest) {
 
       results.push(product);
     }
+
+    // Sort by savings (highest difference first)
+    results.sort((a, b) => {
+      const aMax = Math.max(...a.prices.map(p => p.difference));
+      const bMax = Math.max(...b.prices.map(p => p.difference));
+      return bMax - aMax;
+    });
 
     // Get store info for the selected stores
     const selectedStores = await db

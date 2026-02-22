@@ -26,7 +26,9 @@ export async function GET() {
       .where(eq(stores.approved, true))
       .groupBy(stores.id);
 
-    return NextResponse.json(storeList);
+    return NextResponse.json(storeList, {
+      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+    });
   } catch (error) {
     console.error("Stores fetch error:", error);
     return NextResponse.json({ error: "Failed to fetch stores" }, { status: 500 });

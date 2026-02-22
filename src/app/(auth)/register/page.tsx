@@ -1,10 +1,11 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-/* eslint-disable @next/next/no-img-element */
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,7 @@ import { toast } from "sonner";
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -56,7 +58,6 @@ export default function RegisterPage() {
 
       toast.success("Account created! Signing you in...");
 
-      // Auto sign-in after registration
       await signIn("credentials", {
         email: form.email,
         password: form.password,
@@ -73,7 +74,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md rounded-2xl card-shadow">
       <CardHeader className="text-center">
         <Link href="/" className="flex items-center justify-center mb-2">
           <img src="/logo.png" alt="MaDe Market" className="h-10 w-auto" />
@@ -84,7 +85,7 @@ export default function RegisterPage() {
       <CardContent className="space-y-4">
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full rounded-xl"
           onClick={() => signIn("google", { callbackUrl: "/" })}
         >
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -103,8 +104,8 @@ export default function RegisterPage() {
           </span>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="space-y-1.5">
             <Label htmlFor="name">Full Name</Label>
             <Input
               id="name"
@@ -112,9 +113,10 @@ export default function RegisterPage() {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
+              className="rounded-xl focus-visible:ring-primary/30"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -123,19 +125,31 @@ export default function RegisterPage() {
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               required
+              className="rounded-xl focus-visible:ring-primary/30"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-              minLength={6}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                required
+                minLength={6}
+                className="rounded-xl pr-10 focus-visible:ring-primary/30"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <div className="space-y-2">
             <Label>I want to</Label>
@@ -145,7 +159,7 @@ export default function RegisterPage() {
                 setForm({ ...form, role: value })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="rounded-xl">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -154,7 +168,7 @@ export default function RegisterPage() {
               </SelectContent>
             </Select>
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full rounded-xl" disabled={loading}>
             {loading ? "Creating account..." : "Create account"}
           </Button>
         </form>

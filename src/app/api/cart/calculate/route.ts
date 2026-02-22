@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
         storeId: stores.id,
         storeName: stores.name,
         storeWhatsapp: stores.whatsappNumber,
+        storeWebsiteUrl: stores.websiteUrl,
         productId: storeProducts.productId,
         productName: products.name,
         price: storeProducts.price,
@@ -62,6 +63,8 @@ export async function POST(req: NextRequest) {
         storeMap.set(row.storeId, {
           storeId: row.storeId,
           storeName: row.storeName,
+          storeWebsiteUrl: row.storeWebsiteUrl,
+          storeWhatsapp: row.storeWhatsapp,
           total: 0,
           items: [],
         });

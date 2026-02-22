@@ -7,6 +7,10 @@ import type {
   priceHistory,
   sponsoredListings,
   searchLogs,
+  featuredProducts,
+  productClicks,
+  bundles,
+  brochures,
 } from "@/db/schema";
 
 // ─── Inferred row types ──────────────────────────────────────────────────────
@@ -29,6 +33,10 @@ export type NewCategory = typeof categories.$inferInsert;
 export type PriceHistory = typeof priceHistory.$inferSelect;
 export type SponsoredListing = typeof sponsoredListings.$inferSelect;
 export type SearchLog = typeof searchLogs.$inferSelect;
+export type FeaturedProduct = typeof featuredProducts.$inferSelect;
+export type ProductClick = typeof productClicks.$inferSelect;
+export type Bundle = typeof bundles.$inferSelect;
+export type Brochure = typeof brochures.$inferSelect;
 
 // ─── Custom types ────────────────────────────────────────────────────────────
 
@@ -36,18 +44,24 @@ export type UserRole = "admin" | "vendor" | "user";
 
 export interface CartItem {
   productId: string;
+  productName?: string;
+  productImage?: string | null;
   quantity: number;
 }
 
 export interface CartStoreBreakdown {
   storeId: string;
   storeName: string;
+  storeWebsiteUrl?: string | null;
+  storeWhatsapp?: string | null;
   total: number;
   items: {
     productId: string;
     productName: string;
+    productImage?: string | null;
     price: number;
     quantity: number;
+    externalUrl?: string | null;
   }[];
 }
 
@@ -61,6 +75,7 @@ export interface CartCalculation {
 export interface CompareResult {
   productId: string;
   productName: string;
+  productImage?: string | null;
   category: string;
   prices: {
     storeId: string;

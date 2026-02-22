@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { products, storeProducts, stores, categories, searchLogs, sponsoredListings } from "@/db/schema";
-import { eq, ilike, and, gte, lte, sql, desc, asc } from "drizzle-orm";
+import { eq, ilike, and, gte, lte, sql, desc, asc, or } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { normalizeProductName, extractProductMeta, slugify } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -30,10 +31,17 @@ export async function GET(req: NextRequest) {
         .catch(() => {}); // fire and forget
     }
 
-    // Build conditions
+    // Build conditions — search with enhanced normalization
     const conditions = [];
     if (search) {
-      conditions.push(ilike(products.normalizedName, `%${search.toLowerCase()}%`));
+      const normalizedSearch = normalizeProductName(search);
+      conditions.push(
+        or(
+          ilike(products.normalizedName, `%${normalizedSearch}%`),
+          ilike(products.name, `%${search}%`),
+          ilike(products.brand, `%${search}%`)
+        )
+      );
     }
     if (category) {
       conditions.push(eq(products.categoryId, category));
@@ -148,12 +156,18 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/products — Create product (vendor/admin only)
+// POST /api/products — Find or create product (vendor/admin only)
+// Uses enhanced normalization to match products like "TOPSCORE 10KG" = "Top Score 10 kg" = "topscore 10kg"
+// This ensures multiple vendors selling the same item share one product record for price comparison.
 const createProductSchema = z.object({
   name: z.string().min(1),
   categoryId: z.string().uuid().optional(),
   imageUrl: z.string().optional(),
   unit: z.string().optional(),
+  brand: z.string().optional(),
+  size: z.string().optional(),
+  barcode: z.string().optional(),
+  description: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -162,15 +176,97 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Check store approval (skip for admins)
+  if (session.user.role === "vendor") {
+    const [store] = await db
+      .select({ id: stores.id, approved: stores.approved })
+      .from(stores)
+      .where(eq(stores.ownerId, session.user.id))
+      .limit(1);
+
+    if (!store) {
+      return NextResponse.json({ error: "No store found" }, { status: 404 });
+    }
+
+    if (!store.approved) {
+      return NextResponse.json(
+        { error: "Store must be approved before you can perform this action. Contact admin: +264818222368" },
+        { status: 403 }
+      );
+    }
+  }
+
   try {
     const body = await req.json();
     const validated = createProductSchema.parse(body);
 
+    const normalized = normalizeProductName(validated.name);
+    const meta = extractProductMeta(validated.name);
+    const slug = slugify(validated.name);
+
+    // Multi-strategy matching — try in order of confidence:
+    // 1. Exact barcode match (highest confidence)
+    // 2. Exact normalized name match
+    // 3. Slug match
+    let existing = null;
+
+    if (validated.barcode) {
+      const [byBarcode] = await db
+        .select()
+        .from(products)
+        .where(eq(products.barcode, validated.barcode))
+        .limit(1);
+      if (byBarcode) existing = byBarcode;
+    }
+
+    if (!existing) {
+      // Try exact normalized match, or slug match
+      const [byName] = await db
+        .select()
+        .from(products)
+        .where(or(
+          eq(products.normalizedName, normalized),
+          eq(products.slug, slug)
+        ))
+        .limit(1);
+      if (byName) existing = byName;
+    }
+
+    if (existing) {
+      // Update missing fields if we have them
+      const updates: Record<string, unknown> = {};
+      if (!existing.imageUrl && validated.imageUrl) updates.imageUrl = validated.imageUrl;
+      if (!existing.categoryId && validated.categoryId) updates.categoryId = validated.categoryId;
+      if (!existing.unit && validated.unit) updates.unit = validated.unit;
+      if (!existing.brand && (validated.brand || meta.brand)) updates.brand = validated.brand || meta.brand;
+      if (!existing.size && (validated.size || meta.size)) updates.size = validated.size || meta.size;
+      if (!existing.barcode && validated.barcode) updates.barcode = validated.barcode;
+      if (!existing.description && validated.description) updates.description = validated.description;
+      if (!existing.slug) updates.slug = slug;
+
+      if (Object.keys(updates).length > 0) {
+        const [updated] = await db
+          .update(products)
+          .set(updates)
+          .where(eq(products.id, existing.id))
+          .returning();
+        return NextResponse.json(updated);
+      }
+
+      return NextResponse.json(existing);
+    }
+
+    // Create new product if none exists
     const [product] = await db
       .insert(products)
       .values({
         name: validated.name,
-        normalizedName: validated.name.toLowerCase().trim(),
+        normalizedName: normalized,
+        slug,
+        brand: validated.brand || meta.brand || null,
+        size: validated.size || meta.size || null,
+        barcode: validated.barcode || null,
+        description: validated.description || null,
         categoryId: validated.categoryId || null,
         imageUrl: validated.imageUrl || null,
         unit: validated.unit || null,

@@ -27,10 +27,31 @@ export async function getUploadUrl(
   return getSignedUrl(r2Client, command, { expiresIn: 3600 });
 }
 
+export async function uploadToR2(
+  key: string,
+  body: Buffer | Uint8Array,
+  contentType: string
+): Promise<void> {
+  const command = new PutObjectCommand({
+    Bucket: process.env.R2_BUCKET_NAME,
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+  });
+
+  await r2Client.send(command);
+}
+
+export function getPublicUrl(key: string): string {
+  const rawUrl = process.env.R2_PUBLIC_URL || "";
+  const baseUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
+  return `${baseUrl}/${key}`;
+}
+
 export async function getFileUrl(key: string): Promise<string> {
   // If public URL is configured, use it directly
   if (process.env.R2_PUBLIC_URL) {
-    return `${process.env.R2_PUBLIC_URL}/${key}`;
+    return getPublicUrl(key);
   }
 
   const command = new GetObjectCommand({
