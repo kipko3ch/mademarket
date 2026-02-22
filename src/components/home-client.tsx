@@ -134,9 +134,10 @@ const STORE_COLORS: Record<string, string> = {
 export function HomeClient({ banners, stores, products, featuredProducts = [], popularProducts = [], bundles = [] }: HomeClientProps) {
   const displayBanners = banners.length > 0 ? banners : FALLBACK_BANNERS;
   const userLocation = useLocation((s) => s.location);
+  const hasRealStores = stores.length > 0;
 
   // Sort stores by proximity: same city first → same region → rest
-  const sortedStores = [...(stores.length > 0 ? stores : FALLBACK_STORES)].sort((a, b) => {
+  const sortedStores = [...(hasRealStores ? stores : FALLBACK_STORES)].sort((a, b) => {
     if (!userLocation?.city) return 0;
     const userCity = userLocation.city;
     const userRegion = userLocation.region || getRegionForCity(userCity);
@@ -186,7 +187,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
               Supported Retailers
             </h3>
           </div>
-          <RetailerMarquee stores={displayStores} />
+          <RetailerMarquee stores={displayStores} hasRealStores={hasRealStores} />
         </section>
 
         {/* ═══════════════════════════════════════════════════════════
@@ -593,12 +594,11 @@ function BundleCard({ bundle }: { bundle: BundleData }) {
 
 // ─── Retailer Marquee ───────────────────────────────────────────────────────
 
-function RetailerMarquee({ stores }: { stores: StoreData[] }) {
+function RetailerMarquee({ stores, hasRealStores }: { stores: StoreData[]; hasRealStores: boolean }) {
   const unique = Array.from(new Map(stores.map(s => [s.id, s])).values());
   // Repeat enough times so the marquee never shows a visible gap/restart
   const repeatCount = unique.length <= 4 ? 4 : unique.length <= 8 ? 3 : 2;
   const doubled = Array.from({ length: repeatCount }, () => unique).flat();
-  const isFallback = stores.length > 0 && stores[0].id.startsWith("f");
 
   // Scroll by 1/repeatCount of total width so it loops one set of unique stores
   const scrollPercent = `${(-100 / repeatCount).toFixed(2)}%`;
@@ -615,7 +615,7 @@ function RetailerMarquee({ stores }: { stores: StoreData[] }) {
         style={{ "--scroll-offset": scrollPercent, "--scroll-duration": scrollDuration } as React.CSSProperties}
       >
         {doubled.map((s, i) => {
-          const href = isFallback ? "/products" : `/store/${s.id}`;
+          const href = hasRealStores ? `/store/${s.slug || s.id}` : "/products";
           const colorClass = STORE_COLORS[s.name] || "bg-slate-500";
 
           return (

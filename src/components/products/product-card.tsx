@@ -114,11 +114,10 @@ export function ProductCard({
             addItem(id, name, imageUrl);
           }}
         >
-          <img
-            src="/icons/cart.png"
-            alt="Cart"
-            className="h-4.5 w-4.5 sm:h-5.5 sm:w-5.5 object-contain brightness-0 invert transition-all scale-110"
-          />
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="sm:w-6 sm:h-6">
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
         </button>
       </div>
 

@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   Package,
   Upload,
-  BarChart3,
   Megaphone,
   Store,
   Settings,
@@ -32,7 +31,6 @@ const vendorLinks: SidebarLink[] = [
   { href: "/dashboard/upload", label: "Bulk Upload", icon: Upload, requiresApproval: true },
   { href: "/dashboard/bundles", label: "Bundles", icon: ShoppingBag, requiresApproval: true },
   { href: "/dashboard/brochures", label: "Brochures", icon: FileText, requiresApproval: true },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/sponsored", label: "Sponsored Ads", icon: Megaphone, requiresApproval: true },
   { href: "/dashboard/store-settings", label: "Store Settings", icon: Settings },
 ];
