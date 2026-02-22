@@ -55,6 +55,9 @@ export interface CartStoreBreakdown {
   storeWebsiteUrl?: string | null;
   storeWhatsapp?: string | null;
   total: number;
+  itemCount: number;
+  totalItems: number;
+  hasAllItems: boolean;
   items: {
     productId: string;
     productName: string;

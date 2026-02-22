@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const conditions = [
       eq(brochures.status, "published"),
       eq(stores.approved, true),
+      eq(stores.suspended, false),
     ];
 
     if (storeId) {

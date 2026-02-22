@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       })
       .from(storeProducts)
       .innerJoin(products, eq(storeProducts.productId, products.id))
-      .innerJoin(stores, eq(storeProducts.storeId, stores.id))
+      .innerJoin(stores, and(eq(storeProducts.storeId, stores.id), eq(stores.approved, true), eq(stores.suspended, false)))
       .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(and(...conditions))
       .orderBy(products.name, stores.name);

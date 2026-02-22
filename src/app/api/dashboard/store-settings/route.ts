@@ -56,6 +56,12 @@ export async function PATCH(req: NextRequest) {
     if ("websiteUrl" in body) {
       updateData.websiteUrl = body.websiteUrl || null;
     }
+    if ("region" in body) {
+      updateData.region = body.region || null;
+    }
+    if ("city" in body) {
+      updateData.city = body.city || null;
+    }
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
@@ -75,6 +81,8 @@ export async function PATCH(req: NextRequest) {
       id: updated.id,
       name: updated.name,
       description: updated.description,
+      region: updated.region,
+      city: updated.city,
       address: updated.address,
       whatsappNumber: updated.whatsappNumber,
       logoUrl: updated.logoUrl,

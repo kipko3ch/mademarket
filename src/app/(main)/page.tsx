@@ -28,11 +28,13 @@ export default async function HomePage() {
         slug: stores.slug,
         logoUrl: stores.logoUrl,
         description: stores.description,
+        region: stores.region,
+        city: stores.city,
         productCount: sql<number>`count(${storeProducts.id})`.as("product_count"),
       })
       .from(stores)
       .leftJoin(storeProducts, eq(stores.id, storeProducts.storeId))
-      .where(and(eq(stores.approved, true), eq(stores.showInMarquee, true)))
+      .where(and(eq(stores.approved, true), eq(stores.suspended, false), eq(stores.showInMarquee, true)))
       .groupBy(stores.id)
       .orderBy(asc(stores.marqueeOrder))
       .catch(() => []),
@@ -146,11 +148,13 @@ export default async function HomePage() {
         slug: stores.slug,
         logoUrl: stores.logoUrl,
         description: stores.description,
+        region: stores.region,
+        city: stores.city,
         productCount: sql<number>`count(${storeProducts.id})`.as("product_count"),
       })
       .from(stores)
       .leftJoin(storeProducts, eq(stores.id, storeProducts.storeId))
-      .where(eq(stores.approved, true))
+      .where(and(eq(stores.approved, true), eq(stores.suspended, false)))
       .groupBy(stores.id)
       .orderBy(asc(stores.name))
       .catch(() => []);

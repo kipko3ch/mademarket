@@ -7,15 +7,15 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Crosshair, ChevronRight } from "lucide-react";
+import { Crosshair, ChevronRight, ChevronLeft } from "lucide-react";
 import Link from "next/link";
-import { useLocation, NAMIBIA_CITIES } from "@/hooks/use-location";
-import { cn } from "@/lib/utils";
+import { useLocation, NAMIBIA_REGIONS } from "@/hooks/use-location";
 
 const POPULAR_CITIES = ["Windhoek", "Swakopmund", "Walvis Bay", "Oshakati"];
 
 export function LocationModal() {
     const [open, setOpen] = useState(false);
+    const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
     const { setLocation } = useLocation();
 
     useEffect(() => {
@@ -32,11 +32,12 @@ export function LocationModal() {
         setOpen(newOpen);
         if (!newOpen) {
             localStorage.setItem("hasSeenLocationModal", "true");
+            setSelectedRegion(null);
         }
     };
 
-    const handleSelectCity = (city: string) => {
-        setLocation({ city });
+    const handleSelectCity = (city: string, region?: string) => {
+        setLocation({ city, region });
         handleOpenChange(false);
     };
 
@@ -100,24 +101,54 @@ export function LocationModal() {
                         ))}
                     </div>
 
-                    {/* Other cities */}
+                    {/* Browse by Region */}
                     <details className="group">
                         <summary className="text-xs font-semibold text-primary cursor-pointer hover:underline list-none flex items-center gap-1 mb-2">
                             <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
-                            All cities
+                            Browse by Region
                         </summary>
-                        <div className="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto scrollbar-hide">
-                            {NAMIBIA_CITIES.filter(c => !POPULAR_CITIES.includes(c)).map((city) => (
-                                <button
-                                    key={city}
-                                    onClick={() => handleSelectCity(city)}
-                                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-primary/5 hover:text-primary transition-colors text-left"
-                                >
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src="/icons/location.png" alt="Loc" className="h-3 w-3 shrink-0 object-contain opacity-50" />
-                                    {city}
-                                </button>
-                            ))}
+
+                        <div className="max-h-[200px] overflow-y-auto scrollbar-hide">
+                            {selectedRegion ? (
+                                <>
+                                    <button
+                                        onClick={() => setSelectedRegion(null)}
+                                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-primary hover:underline mb-1"
+                                    >
+                                        <ChevronLeft className="h-3 w-3" />
+                                        Back to regions
+                                    </button>
+                                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-3 mb-1.5">
+                                        {selectedRegion} Region
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        {NAMIBIA_REGIONS[selectedRegion]?.map((town) => (
+                                            <button
+                                                key={town}
+                                                onClick={() => handleSelectCity(town, selectedRegion)}
+                                                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-primary/5 hover:text-primary transition-colors text-left"
+                                            >
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src="/icons/location.png" alt="Loc" className="h-3 w-3 shrink-0 object-contain opacity-50" />
+                                                {town}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-1.5">
+                                    {Object.keys(NAMIBIA_REGIONS).map((region) => (
+                                        <button
+                                            key={region}
+                                            onClick={() => setSelectedRegion(region)}
+                                            className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-primary/5 hover:text-primary transition-colors text-left"
+                                        >
+                                            <span>{region}</span>
+                                            <ChevronRight className="h-3 w-3 opacity-40" />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </details>
 

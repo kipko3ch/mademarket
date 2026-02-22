@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Store, Globe, Phone, MapPin } from "lucide-react";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { NAMIBIA_REGIONS } from "@/hooks/use-location";
 
 export default function RegisterStorePage() {
   const router = useRouter();
@@ -16,12 +17,17 @@ export default function RegisterStorePage() {
   const [form, setForm] = useState({
     name: "",
     description: "",
+    region: "",
+    city: "",
     whatsappNumber: "",
     address: "",
     websiteUrl: "",
     logoUrl: "",
     bannerUrl: "",
   });
+
+  const regionNames = Object.keys(NAMIBIA_REGIONS);
+  const citiesForRegion = form.region ? NAMIBIA_REGIONS[form.region] || [] : [];
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,6 +96,49 @@ export default function RegisterStorePage() {
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                 />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="region">Region *</Label>
+                  <select
+                    id="region"
+                    value={form.region}
+                    onChange={(e) =>
+                      setForm({ ...form, region: e.target.value, city: "" })
+                    }
+                    required
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="">Select region</option>
+                    {regionNames.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">City / Town *</Label>
+                  <select
+                    id="city"
+                    value={form.city}
+                    onChange={(e) =>
+                      setForm({ ...form, city: e.target.value })
+                    }
+                    required
+                    disabled={!form.region}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">
+                      {form.region ? "Select city/town" : "Select a region first"}
+                    </option>
+                    {citiesForRegion.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="address" className="flex items-center gap-1.5">

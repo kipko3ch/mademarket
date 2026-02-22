@@ -32,7 +32,10 @@ export async function GET(
         websiteUrl: stores.websiteUrl,
         whatsappNumber: stores.whatsappNumber,
         address: stores.address,
+        region: stores.region,
+        city: stores.city,
         approved: stores.approved,
+        suspended: stores.suspended,
         productCount:
           sql<number>`count(${storeProducts.id})`.as("product_count"),
       })
@@ -42,7 +45,7 @@ export async function GET(
       .groupBy(stores.id)
       .limit(1);
 
-    if (!store || !store.approved) {
+    if (!store || !store.approved || store.suspended) {
       return NextResponse.json(
         { error: "Store not found" },
         { status: 404 }

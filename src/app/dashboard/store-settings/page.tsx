@@ -10,11 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Settings, Store, CheckCircle, Clock, Globe, Phone, MapPin } from "lucide-react";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { NAMIBIA_REGIONS } from "@/hooks/use-location";
 
 interface StoreData {
   id: string;
   name: string;
   description: string | null;
+  region: string | null;
+  city: string | null;
   address: string | null;
   whatsappNumber: string | null;
   logoUrl: string | null;
@@ -30,12 +33,17 @@ export default function VendorStoreSettingsPage() {
   const [form, setForm] = useState({
     name: "",
     description: "",
+    region: "",
+    city: "",
     address: "",
     whatsappNumber: "",
     logoUrl: "",
     bannerUrl: "",
     websiteUrl: "",
   });
+
+  const regionNames = Object.keys(NAMIBIA_REGIONS);
+  const citiesForRegion = form.region ? NAMIBIA_REGIONS[form.region] || [] : [];
 
   useEffect(() => {
     async function fetchStore() {
@@ -48,6 +56,8 @@ export default function VendorStoreSettingsPage() {
             setForm({
               name: data.store.name || "",
               description: data.store.description || "",
+              region: data.store.region || "",
+              city: data.store.city || "",
               address: data.store.address || "",
               whatsappNumber: data.store.whatsappNumber || "",
               logoUrl: data.store.logoUrl || "",
@@ -71,12 +81,14 @@ export default function VendorStoreSettingsPage() {
     setSaving(true);
 
     try {
-      const res = await fetch(`/api/admin/stores/${store.id}`, {
+      const res = await fetch("/api/dashboard/store-settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name,
           description: form.description,
+          region: form.region,
+          city: form.city,
           address: form.address,
           whatsappNumber: form.whatsappNumber,
           logoUrl: form.logoUrl,
@@ -256,6 +268,49 @@ export default function VendorStoreSettingsPage() {
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                 />
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="store-region">Region *</Label>
+                  <select
+                    id="store-region"
+                    value={form.region}
+                    onChange={(e) =>
+                      setForm({ ...form, region: e.target.value, city: "" })
+                    }
+                    required
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="">Select region</option>
+                    {regionNames.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="store-city">City / Town *</Label>
+                  <select
+                    id="store-city"
+                    value={form.city}
+                    onChange={(e) =>
+                      setForm({ ...form, city: e.target.value })
+                    }
+                    required
+                    disabled={!form.region}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">
+                      {form.region ? "Select city/town" : "Select a region first"}
+                    </option>
+                    {citiesForRegion.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="store-address" className="flex items-center gap-1.5">
                   <MapPin className="h-3.5 w-3.5 text-slate-400" />
@@ -308,34 +363,36 @@ export default function VendorStoreSettingsPage() {
               <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">
                 Branding
               </h3>
-              <div className="space-y-2">
-                <Label>Store Logo</Label>
-                <ImageUpload
-                  value={form.logoUrl || undefined}
-                  onChange={(url) => setForm({ ...form, logoUrl: url })}
-                  onRemove={() => setForm({ ...form, logoUrl: "" })}
-                  folder="stores/logos"
-                  aspectRatio="square"
-                  label="Upload Store Logo"
-                  className="max-w-[200px]"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Recommended size: 200x200px.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Store Banner</Label>
-                <ImageUpload
-                  value={form.bannerUrl || undefined}
-                  onChange={(url) => setForm({ ...form, bannerUrl: url })}
-                  onRemove={() => setForm({ ...form, bannerUrl: "" })}
-                  folder="stores/banners"
-                  aspectRatio="banner"
-                  label="Upload Store Banner"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Recommended size: 1200x400px.
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-4 items-start">
+                <div className="space-y-2">
+                  <Label>Store Logo</Label>
+                  <ImageUpload
+                    value={form.logoUrl || undefined}
+                    onChange={(url) => setForm({ ...form, logoUrl: url })}
+                    onRemove={() => setForm({ ...form, logoUrl: "" })}
+                    folder="stores/logos"
+                    aspectRatio="square"
+                    label="Upload Store Logo"
+                    className="max-w-[200px]"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Recommended: 200x200px
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Store Banner</Label>
+                  <ImageUpload
+                    value={form.bannerUrl || undefined}
+                    onChange={(url) => setForm({ ...form, bannerUrl: url })}
+                    onRemove={() => setForm({ ...form, bannerUrl: "" })}
+                    folder="stores/banners"
+                    aspectRatio="banner"
+                    label="Upload Store Banner"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Recommended: 1200x400px
+                  </p>
+                </div>
               </div>
             </div>
 

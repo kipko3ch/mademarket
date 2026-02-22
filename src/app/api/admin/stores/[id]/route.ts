@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { stores } from "@/db/schema";
+import { stores, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-// PATCH /api/admin/stores/[id] — Approve/reject a store
+// PATCH /api/admin/stores/[id] — Update a store (approve/reject/suspend/settings)
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -26,6 +26,7 @@ export async function PATCH(
     // Admin-only fields
     if (session.user.role === "admin") {
       if ("approved" in body) updateData.approved = Boolean(body.approved);
+      if ("suspended" in body) updateData.suspended = Boolean(body.suspended);
       if ("showInMarquee" in body) updateData.showInMarquee = Boolean(body.showInMarquee);
       if ("marqueeOrder" in body) updateData.marqueeOrder = Number(body.marqueeOrder);
     }
@@ -57,5 +58,49 @@ export async function PATCH(
   } catch (error) {
     console.error("Store update error:", error);
     return NextResponse.json({ error: "Failed to update store" }, { status: 500 });
+  }
+}
+
+// DELETE /api/admin/stores/[id] — Delete a vendor store and all associated data
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const session = await auth();
+
+  if (!session?.user || session.user.role !== "admin") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    // Get store info first (for the owner's user ID)
+    const [store] = await db
+      .select({ id: stores.id, ownerId: stores.ownerId, name: stores.name })
+      .from(stores)
+      .where(eq(stores.id, id))
+      .limit(1);
+
+    if (!store) {
+      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    }
+
+    // Delete the store — all related data (storeProducts, priceHistory,
+    // sponsoredListings, bundles, brochures) cascade-deletes automatically
+    await db.delete(stores).where(eq(stores.id, id));
+
+    // Downgrade the vendor user back to regular user
+    await db
+      .update(users)
+      .set({ role: "user" })
+      .where(eq(users.id, store.ownerId));
+
+    return NextResponse.json({
+      success: true,
+      message: `Store "${store.name}" and all associated data have been deleted`,
+    });
+  } catch (error) {
+    console.error("Store delete error:", error);
+    return NextResponse.json({ error: "Failed to delete store" }, { status: 500 });
   }
 }

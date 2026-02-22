@@ -41,7 +41,7 @@ export async function GET(
           externalUrl: storeProducts.externalUrl,
         })
         .from(storeProducts)
-        .innerJoin(stores, and(eq(storeProducts.storeId, stores.id), eq(stores.approved, true)))
+        .innerJoin(stores, and(eq(storeProducts.storeId, stores.id), eq(stores.approved, true), eq(stores.suspended, false)))
         .where(eq(storeProducts.productId, id))
         .orderBy(storeProducts.price),
     ]);

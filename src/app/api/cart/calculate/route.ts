@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { storeProducts, products, stores } from "@/db/schema";
-import { inArray, eq, and, sql } from "drizzle-orm";
+import { inArray, eq, and } from "drizzle-orm";
 import { z } from "zod";
 import type { CartCalculation, CartStoreBreakdown } from "@/types";
 
@@ -17,7 +17,6 @@ const cartSchema = z.object({
 });
 
 // POST /api/cart/calculate — Smart Cart Engine
-// Optimized single query: group by store, SUM(price * quantity), find cheapest
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -25,9 +24,9 @@ export async function POST(req: NextRequest) {
 
     const productIds = items.map((item) => item.productId);
     const quantityMap = new Map(items.map((i) => [i.productId, i.quantity]));
+    const totalItemsRequested = productIds.length;
 
     // Single optimized query: get all store prices for requested products
-    // grouped by store with totals
     const results = await db
       .select({
         storeId: stores.id,
@@ -41,7 +40,8 @@ export async function POST(req: NextRequest) {
       .from(storeProducts)
       .innerJoin(stores, and(
         eq(storeProducts.storeId, stores.id),
-        eq(stores.approved, true)
+        eq(stores.approved, true),
+        eq(stores.suspended, false)
       ))
       .innerJoin(products, eq(storeProducts.productId, products.id))
       .where(
@@ -66,6 +66,9 @@ export async function POST(req: NextRequest) {
           storeWebsiteUrl: row.storeWebsiteUrl,
           storeWhatsapp: row.storeWhatsapp,
           total: 0,
+          itemCount: 0,
+          totalItems: totalItemsRequested,
+          hasAllItems: false,
           items: [],
         });
       }
@@ -78,19 +81,21 @@ export async function POST(req: NextRequest) {
         quantity,
       });
       store.total += price * quantity;
+      store.itemCount = store.items.length;
     }
 
     const storeBreakdowns = Array.from(storeMap.values());
 
-    // Only consider stores that have ALL requested products
-    const fullStores = storeBreakdowns.filter(
-      (s) => s.items.length === productIds.length
-    );
+    // Mark which stores have all items
+    for (const store of storeBreakdowns) {
+      store.hasAllItems = store.itemCount === totalItemsRequested;
+    }
 
-    // If no store has all products, include partial stores too
-    const candidates = fullStores.length > 0 ? fullStores : storeBreakdowns;
+    // Separate into full-coverage and partial-coverage stores
+    const fullStores = storeBreakdowns.filter((s) => s.hasAllItems);
+    const partialStores = storeBreakdowns.filter((s) => !s.hasAllItems);
 
-    if (candidates.length === 0) {
+    if (storeBreakdowns.length === 0) {
       return NextResponse.json({
         stores: [],
         cheapestStoreId: null,
@@ -100,21 +105,38 @@ export async function POST(req: NextRequest) {
     }
 
     // Round totals
-    candidates.forEach((s) => {
+    storeBreakdowns.forEach((s) => {
       s.total = Math.round(s.total * 100) / 100;
     });
 
-    // Sort by total ascending
-    candidates.sort((a, b) => a.total - b.total);
+    // Sort full stores by total ascending, partial stores by coverage then price
+    fullStores.sort((a, b) => a.total - b.total);
+    partialStores.sort((a, b) => b.itemCount - a.itemCount || a.total - b.total);
 
-    const cheapest = candidates[0];
-    const mostExpensive = candidates[candidates.length - 1];
+    // Combined list: full stores first, then partial
+    const sortedStores = [...fullStores, ...partialStores];
+
+    // Only calculate savings among full-coverage stores (apples-to-apples comparison)
+    let maxSavings = 0;
+    let cheapestStoreId = sortedStores[0]?.storeId ?? null;
+    let cheapestTotal = sortedStores[0]?.total ?? 0;
+
+    if (fullStores.length >= 2) {
+      const cheapestFull = fullStores[0];
+      const mostExpensiveFull = fullStores[fullStores.length - 1];
+      maxSavings = Math.round((mostExpensiveFull.total - cheapestFull.total) * 100) / 100;
+      cheapestStoreId = cheapestFull.storeId;
+      cheapestTotal = cheapestFull.total;
+    } else if (fullStores.length === 1) {
+      cheapestStoreId = fullStores[0].storeId;
+      cheapestTotal = fullStores[0].total;
+    }
 
     const response: CartCalculation = {
-      stores: candidates,
-      cheapestStoreId: cheapest.storeId,
-      cheapestTotal: cheapest.total,
-      maxSavings: Math.round((mostExpensive.total - cheapest.total) * 100) / 100,
+      stores: sortedStores,
+      cheapestStoreId,
+      cheapestTotal,
+      maxSavings,
     };
 
     return NextResponse.json(response);

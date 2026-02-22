@@ -44,12 +44,20 @@ export const stores = pgTable("stores", {
   bannerUrl: text("banner_url"),
   websiteUrl: text("website_url"),
   whatsappNumber: text("whatsapp_number"),
+  region: text("region"),
+  city: text("city"),
   address: text("address"),
+  latitude: text("latitude"),
+  longitude: text("longitude"),
   approved: boolean("approved").notNull().default(false),
+  suspended: boolean("suspended").notNull().default(false),
   showInMarquee: boolean("show_in_marquee").notNull().default(false),
   marqueeOrder: integer("marquee_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_stores_region").on(table.region),
+  index("idx_stores_city").on(table.city),
+]);
 
 export const storesRelations = relations(stores, ({ one, many }) => ({
   owner: one(users, {

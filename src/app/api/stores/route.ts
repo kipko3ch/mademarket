@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { stores, users, storeProducts } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 
@@ -19,11 +19,13 @@ export async function GET() {
         logoUrl: stores.logoUrl,
         whatsappNumber: stores.whatsappNumber,
         address: stores.address,
+        region: stores.region,
+        city: stores.city,
         productCount: sql<number>`count(${storeProducts.id})`.as("product_count"),
       })
       .from(stores)
       .leftJoin(storeProducts, eq(stores.id, storeProducts.storeId))
-      .where(eq(stores.approved, true))
+      .where(and(eq(stores.approved, true), eq(stores.suspended, false)))
       .groupBy(stores.id);
 
     return NextResponse.json(storeList, {
@@ -39,9 +41,13 @@ export async function GET() {
 const createStoreSchema = z.object({
   name: z.string().min(2, "Store name must be at least 2 characters"),
   description: z.string().optional(),
+  region: z.string().min(1, "Region is required"),
+  city: z.string().min(1, "City is required"),
   whatsappNumber: z.string().optional(),
   address: z.string().optional(),
   logoUrl: z.string().optional(),
+  websiteUrl: z.string().optional(),
+  bannerUrl: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -89,9 +95,13 @@ export async function POST(req: NextRequest) {
         name: validated.name,
         slug,
         description: validated.description || null,
+        region: validated.region,
+        city: validated.city,
         whatsappNumber: validated.whatsappNumber || null,
         address: validated.address || null,
         logoUrl: validated.logoUrl || null,
+        websiteUrl: validated.websiteUrl || null,
+        bannerUrl: validated.bannerUrl || null,
         approved: false, // requires admin approval
       })
       .returning();

@@ -34,7 +34,7 @@ export async function GET(
         storeBanner: stores.bannerUrl,
       })
       .from(brochures)
-      .innerJoin(stores, eq(brochures.storeId, stores.id))
+      .innerJoin(stores, and(eq(brochures.storeId, stores.id), eq(stores.approved, true), eq(stores.suspended, false)))
       .where(
         and(
           eq(brochures.slug, slug),

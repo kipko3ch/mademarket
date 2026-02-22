@@ -18,6 +18,8 @@ interface StoreData {
   websiteUrl: string | null;
   whatsappNumber: string | null;
   address: string | null;
+  region: string | null;
+  city: string | null;
   productCount: number;
 }
 
@@ -174,10 +176,12 @@ export default function StoreProfilePage({
                   <Package className="h-3 w-3 mr-1" />
                   {products.length} Products
                 </Badge>
-                {store.address && (
+                {(store.city || store.region || store.address) && (
                   <span className="text-xs text-slate-500 flex items-center gap-1">
                     <MapPin className="h-3 w-3" />
-                    {store.address}
+                    {store.city && store.region
+                      ? `${store.city}, ${store.region}, Namibia`
+                      : store.address}
                   </span>
                 )}
               </div>

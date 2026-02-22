@@ -35,7 +35,7 @@ export async function GET(
         storeWhatsapp: stores.whatsappNumber,
       })
       .from(bundles)
-      .innerJoin(stores, eq(bundles.storeId, stores.id))
+      .innerJoin(stores, and(eq(bundles.storeId, stores.id), eq(stores.approved, true), eq(stores.suspended, false)))
       .where(
         and(
           eq(bundles.slug, slug),

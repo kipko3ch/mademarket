@@ -7,6 +7,7 @@ import { ChevronRight, Store, ArrowRight, Diamond, TrendingUp, Package } from "l
 import { ProductCard } from "@/components/products/product-card";
 import { LocationModal } from "@/components/location-modal";
 import { BrochuresSection } from "@/components/brochures-section";
+import { useLocation, getRegionForCity } from "@/hooks/use-location";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,8 @@ interface StoreData {
   slug: string;
   logoUrl: string | null;
   description: string | null;
+  region: string | null;
+  city: string | null;
   productCount: number;
 }
 
@@ -104,14 +107,14 @@ const FALLBACK_BANNERS: Banner[] = [
 ];
 
 const FALLBACK_STORES: StoreData[] = [
-  { id: "f1", name: "Shoprite", slug: "shoprite", logoUrl: "/images/shoprite.jpeg", description: null, productCount: 0 },
-  { id: "f2", name: "Checkers", slug: "checkers", logoUrl: "/images/checkers.png", description: null, productCount: 0 },
-  { id: "f3", name: "SPAR", slug: "spar", logoUrl: "/images/spar.jpg", description: null, productCount: 0 },
-  { id: "f4", name: "Choppies", slug: "choppies", logoUrl: "/images/choppies.png", description: null, productCount: 0 },
-  { id: "f5", name: "Food Lover's", slug: "food-lovers", logoUrl: "/images/foodloversmarket.png", description: null, productCount: 0 },
-  { id: "f6", name: "U-Save", slug: "usave", logoUrl: "/images/usave.png", description: null, productCount: 0 },
-  { id: "f7", name: "Woermann Brock", slug: "wb", logoUrl: "/images/wb.jpeg", description: null, productCount: 0 },
-  { id: "f8", name: "Namica", slug: "namica", logoUrl: "/images/namica.jpg", description: null, productCount: 0 },
+  { id: "f1", name: "Shoprite", slug: "shoprite", logoUrl: "/images/shoprite.jpeg", description: null, region: null, city: null, productCount: 0 },
+  { id: "f2", name: "Checkers", slug: "checkers", logoUrl: "/images/checkers.png", description: null, region: null, city: null, productCount: 0 },
+  { id: "f3", name: "SPAR", slug: "spar", logoUrl: "/images/spar.jpg", description: null, region: null, city: null, productCount: 0 },
+  { id: "f4", name: "Choppies", slug: "choppies", logoUrl: "/images/choppies.png", description: null, region: null, city: null, productCount: 0 },
+  { id: "f5", name: "Food Lover's", slug: "food-lovers", logoUrl: "/images/foodloversmarket.png", description: null, region: null, city: null, productCount: 0 },
+  { id: "f6", name: "U-Save", slug: "usave", logoUrl: "/images/usave.png", description: null, region: null, city: null, productCount: 0 },
+  { id: "f7", name: "Woermann Brock", slug: "wb", logoUrl: "/images/wb.jpeg", description: null, region: null, city: null, productCount: 0 },
+  { id: "f8", name: "Namica", slug: "namica", logoUrl: "/images/namica.jpg", description: null, region: null, city: null, productCount: 0 },
 ];
 
 // Store brand colors for the marquee letter icons
@@ -130,7 +133,24 @@ const STORE_COLORS: Record<string, string> = {
 
 export function HomeClient({ banners, stores, products, featuredProducts = [], popularProducts = [], bundles = [] }: HomeClientProps) {
   const displayBanners = banners.length > 0 ? banners : FALLBACK_BANNERS;
-  const displayStores = stores.length > 0 ? stores : FALLBACK_STORES;
+  const userLocation = useLocation((s) => s.location);
+
+  // Sort stores by proximity: same city first → same region → rest
+  const sortedStores = [...(stores.length > 0 ? stores : FALLBACK_STORES)].sort((a, b) => {
+    if (!userLocation?.city) return 0;
+    const userCity = userLocation.city;
+    const userRegion = userLocation.region || getRegionForCity(userCity);
+    const aCity = a.city === userCity;
+    const bCity = b.city === userCity;
+    if (aCity && !bCity) return -1;
+    if (!aCity && bCity) return 1;
+    const aRegion = a.region === userRegion;
+    const bRegion = b.region === userRegion;
+    if (aRegion && !bRegion) return -1;
+    if (!aRegion && bRegion) return 1;
+    return 0;
+  });
+  const displayStores = sortedStores;
   // Only show featured products that admin has explicitly added
   const displayFeatured = featuredProducts;
   const dealProducts = products.slice(8, 12);
@@ -375,7 +395,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
 
   return (
     <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl mb-8 sm:mb-12 md:-mx-8">
-      <div className="relative min-h-[280px] sm:min-h-[380px] md:min-h-[460px] lg:min-h-[500px] flex items-center px-5 py-8 sm:px-8 sm:py-10 md:px-16 md:py-12 bg-slate-900 overflow-hidden">
+      <div className="relative min-h-[280px] sm:min-h-[380px] md:min-h-[460px] lg:min-h-[500px] flex items-center px-5 py-8 sm:px-8 sm:py-10 md:px-16 md:py-12 overflow-hidden" style={{ backgroundColor: b.bgColor || '#0f172a' }}>
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <img
@@ -383,7 +403,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
             alt=""
             className="w-full h-full object-cover object-center opacity-40 sm:opacity-50 md:opacity-60 scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/70 sm:via-slate-900/50 to-slate-900/20 sm:to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
         </div>
 
         {/* Hero Content */}
@@ -602,9 +622,9 @@ function RetailerMarquee({ stores }: { stores: StoreData[] }) {
             <Link
               key={`${s.id}-${i}`}
               href={href}
-              className="flex-shrink-0 flex flex-col items-center gap-2.5 group transition-all duration-300"
+              className="flex-shrink-0 flex flex-col items-center gap-2.5 group transition-all duration-300 cursor-pointer"
             >
-              <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center transition-all duration-300">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
                 {s.logoUrl ? (
                   <img
                     src={s.logoUrl}

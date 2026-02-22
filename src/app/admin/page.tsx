@@ -154,21 +154,10 @@ export default function AdminPage() {
                 card.isPrimary ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-900 border-slate-100 hover:border-slate-200"
               )}
             >
-              {card.isPrimary && (
-                <div className="absolute -right-10 -bottom-10 opacity-20 transform rotate-12">
-                  <Megaphone className="h-40 w-40 text-blue-900" />
-                </div>
-              )}
               <div className="flex justify-between items-start relative z-10 w-full mb-6">
                 <span className={cn("text-base font-semibold", card.isPrimary ? "text-white/90" : "text-slate-600")}>
                   {card.label}
                 </span>
-                <div className={cn(
-                  "h-8 w-8 rounded-full flex items-center justify-center shrink-0 border",
-                  card.isPrimary ? "bg-white/10 border-white/20 text-white" : "bg-white border-slate-200 text-slate-600"
-                )}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7" /><path d="M7 7h10v10" /></svg>
-                </div>
               </div>
               <div className="relative z-10">
                 <div className="text-4xl sm:text-5xl font-bold tracking-tight mb-2">

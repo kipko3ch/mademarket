@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Package, TrendingUp, Upload, Plus, Store, Settings, ShoppingBag, AlertTriangle, CheckCircle2, Phone, MessageCircle, Megaphone, Lock } from "lucide-react";
+import { Package, TrendingUp, Upload, Plus, Store, Settings, ShoppingBag, AlertTriangle, CheckCircle2, Phone, MessageCircle, Megaphone, Lock, Ban } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ interface StoreData {
   id: string;
   name: string;
   approved: boolean;
+  suspended: boolean;
 }
 
 export default function DashboardPage() {
@@ -76,8 +77,49 @@ export default function DashboardPage() {
         <p className="text-sm text-slate-500 mt-1">Welcome back, {session?.user?.name}. Manage {store.name} tasks with ease.</p>
       </div>
 
+      {/* Suspension Banner */}
+      {store.suspended ? (
+        <div className="bg-red-50 border border-red-200 rounded-3xl p-5 mb-8 space-y-3 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+              <Ban className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-red-800 text-sm">Store Suspended</h3>
+              <p className="text-xs text-red-700 mt-0.5">
+                Your store has been temporarily suspended by an admin. Your products and listings are hidden from the public. Please contact the admin to resolve this.
+              </p>
+            </div>
+          </div>
+          <div className="bg-white/70 rounded-2xl p-4 border border-red-100/50">
+            <p className="text-xs font-semibold text-red-800 mb-3 flex items-center gap-1.5">
+              <Phone className="h-4 w-4" />
+              Admin Contact: +264 81 822 2368
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href="tel:+264818222368"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-colors shadow-sm shadow-red-600/20"
+              >
+                <Phone className="h-3.5 w-3.5" />
+                Call Admin
+              </a>
+              <a
+                href="https://wa.me/264818222368?text=Hello%20Admin%2C%20my%20store%20on%20MaDe%20Market%20has%20been%20suspended.%20Can%20you%20help%20me%20resolve%20this%3F"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-xs font-bold rounded-xl hover:bg-green-700 transition-colors shadow-sm shadow-green-600/20"
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                WhatsApp Admin
+              </a>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Approval Status Banner */}
-      {!store.approved ? (
+      {!store.approved && !store.suspended ? (
         <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 mb-8 space-y-3 shadow-sm">
           <div className="flex items-start gap-3">
             <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
@@ -157,11 +199,11 @@ export default function DashboardPage() {
           </div>
           <div className="relative z-10">
             <div className="text-4xl sm:text-5xl font-bold tracking-tight mb-2">
-              {store.approved ? "Active" : "Pending"}
+              {store.suspended ? "Suspended" : store.approved ? "Active" : "Pending"}
             </div>
             <div className="text-xs flex items-center gap-1.5 text-slate-400">
-              <div className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", store.approved ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600")}>
-                {store.approved ? "Live" : "Waiting"}
+              <div className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", store.suspended ? "bg-red-50 text-red-600" : store.approved ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600")}>
+                {store.suspended ? "Hidden" : store.approved ? "Live" : "Waiting"}
               </div>
               Status check
             </div>
@@ -195,15 +237,17 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div>
         <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Actions</h2>
-        {!store.approved && (
-          <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-4 flex items-center gap-2 shadow-sm">
+        {(!store.approved || store.suspended) && (
+          <p className={cn("text-xs rounded-xl px-4 py-3 mb-4 flex items-center gap-2 shadow-sm", store.suspended ? "text-red-600 bg-red-50 border border-red-100" : "text-amber-600 bg-amber-50 border border-amber-100")}>
             <Lock className="h-4 w-4 shrink-0" />
-            You can prepare your listings but they won&apos;t be visible until approved
+            {store.suspended
+              ? "Your store is suspended. Product management is disabled until reactivated."
+              : "You can prepare your listings but they won\u0027t be visible until approved"}
           </p>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Products - disabled when not approved */}
-          {store.approved ? (
+          {/* Products - disabled when not approved or suspended */}
+          {store.approved && !store.suspended ? (
             <Link
               href="/dashboard/products"
               className="flex items-center gap-4 bg-white border border-slate-100 rounded-2xl p-5 hover:border-primary/20 hover:shadow-md transition-all group"
@@ -228,8 +272,8 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Bulk Upload - disabled when not approved */}
-          {store.approved ? (
+          {/* Bulk Upload - disabled when not approved or suspended */}
+          {store.approved && !store.suspended ? (
             <Link
               href="/dashboard/upload"
               className="flex items-center gap-4 bg-white border border-slate-100 rounded-2xl p-5 hover:border-primary/20 hover:shadow-md transition-all group"
@@ -254,8 +298,8 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Bundles - disabled when not approved */}
-          {store.approved ? (
+          {/* Bundles - disabled when not approved or suspended */}
+          {store.approved && !store.suspended ? (
             <Link
               href="/dashboard/bundles"
               className="flex items-center gap-4 bg-white border border-slate-100 rounded-2xl p-5 hover:border-primary/20 hover:shadow-md transition-all group"

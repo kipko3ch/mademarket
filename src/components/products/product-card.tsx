@@ -2,7 +2,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { useCart } from "@/hooks/use-cart";
 import { useSaved } from "@/hooks/use-saved";
 import { formatCurrency } from "@/lib/currency";
@@ -39,6 +42,8 @@ export function ProductCard({
   const toggleSaved = useSaved((s) => s.toggleSaved);
   const isSavedInStore = useSaved((s) => s.savedIds.includes(id));
   const hasHydrated = useSaved((s) => s._hasHydrated);
+  const { status } = useSession();
+  const router = useRouter();
 
   const saved = hasHydrated ? isSavedInStore : false;
 
@@ -100,6 +105,12 @@ export function ProductCard({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (status !== "authenticated") {
+              toast.error("Please sign in to add items to your cart", {
+                action: { label: "Sign In", onClick: () => router.push("/login") },
+              });
+              return;
+            }
             addItem(id, name, imageUrl);
           }}
         >
