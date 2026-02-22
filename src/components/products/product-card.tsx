@@ -43,98 +43,111 @@ export function ProductCard({
   const saved = hasHydrated ? isSavedInStore : false;
 
   return (
-    <div className="group bg-white border border-primary/5 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
-      {/* Image */}
-      <Link
-        href={productUrl(id, name)}
-        onClick={() => { fetch(`/api/products/${id}/click`, { method: "POST" }).catch(() => {}); }}
-        className="relative block mb-2.5 sm:mb-4 aspect-square rounded-lg sm:rounded-xl overflow-hidden bg-slate-50"
-      >
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={name}
-            className="w-full h-full object-contain p-3 sm:p-4 group-hover:scale-110 transition-transform duration-500"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full p-6">
+    <div className="group flex flex-col transition-all duration-300">
+      {/* Image Container Wrapper */}
+      <div className="relative mb-3 sm:mb-4">
+        {/* Link / Image Container */}
+        <Link
+          href={productUrl(id, name)}
+          onClick={() => { fetch(`/api/products/${id}/click`, { method: "POST" }).catch(() => { }); }}
+          className="relative block aspect-square rounded-2xl sm:rounded-3xl overflow-hidden bg-white border border-slate-100 group-hover:border-primary/20 group-hover:shadow-xl group-hover:shadow-primary/5 transition-all duration-500"
+        >
+          {imageUrl ? (
             <img
-              src="/icons/productplaceholder.png"
-              alt="Placeholder"
-              className="max-h-[60%] max-w-[60%] object-contain opacity-50"
+              src={imageUrl}
+              alt={name}
+              className="w-full h-full object-contain p-4 sm:p-6 group-hover:scale-110 transition-transform duration-700"
+              loading="lazy"
             />
-          </div>
-        )}
+          ) : (
+            <div className="flex items-center justify-center h-full p-6">
+              <img
+                src="/icons/productplaceholder.png"
+                alt="Placeholder"
+                className="max-h-[60%] max-w-[60%] object-contain opacity-40"
+              />
+            </div>
+          )}
 
-        {/* Sponsored badge */}
-        {sponsored && (
-          <span className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 bg-amber-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 sm:px-2.5 py-0.5 rounded-full z-10">
-            Sponsored
-          </span>
-        )}
+          {/* Sponsored badge */}
+          {sponsored && (
+            <div className="absolute top-3 left-3 bg-amber-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-full z-10 shadow-sm">
+              Sponsored
+            </div>
+          )}
 
-        {/* Like button */}
+          {/* Like button */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleSaved(id);
+            }}
+            className={cn(
+              "absolute top-3 right-3 p-2 rounded-full shadow-md transition-all z-10 active:scale-90",
+              saved
+                ? "bg-red-500 text-white"
+                : "bg-white/90 backdrop-blur-md text-slate-400 hover:text-red-500"
+            )}
+          >
+            <Heart className={cn("h-4 w-4", saved && "fill-current")} />
+          </button>
+        </Link>
+
+        {/* Cart Button - Overlapping the bottom-right corner */}
         <button
+          className="absolute -bottom-2 -right-1 h-11 w-11 sm:h-13 sm:w-13 flex items-center justify-center bg-primary text-white border-2 border-white hover:bg-primary/90 rounded-2xl transition-all group/cart shadow-xl active:scale-95 z-20"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            toggleSaved(id);
-          }}
-          className={cn(
-            "absolute top-1.5 right-1.5 sm:top-2 sm:right-2 p-1.5 sm:p-2 rounded-full shadow-sm transition-colors z-10",
-            saved
-              ? "bg-red-500 text-white"
-              : "bg-white/80 backdrop-blur text-slate-400 hover:text-red-500"
-          )}
-        >
-          <Heart className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", saved && "fill-current")} />
-        </button>
-      </Link>
-
-      {/* Product info */}
-      <div className="space-y-0.5 sm:space-y-1 mb-2.5 sm:mb-4">
-        <Link href={productUrl(id, name)}>
-          <h4 className="font-semibold text-xs sm:text-sm text-slate-800 truncate group-hover:text-primary transition-colors">
-            {name}
-          </h4>
-        </Link>
-        {storeCount > 0 && (
-          <span className="text-[10px] sm:text-xs text-slate-500 block">
-            {storeCount} {storeCount === 1 ? "store" : "stores"}
-          </span>
-        )}
-      </div>
-
-      {/* Price + cart row */}
-      <div className="flex items-end justify-between">
-        <div>
-          {minPrice ? (
-            <>
-              <p className="text-[8px] sm:text-[10px] uppercase font-bold text-primary/60 leading-none">
-                {storeCount > 1 ? "From" : "Price"}
-              </p>
-              <p className="text-lg sm:text-2xl font-bold text-primary">
-                {formatCurrency(minPrice)}
-              </p>
-            </>
-          ) : (
-            <p className="text-xs sm:text-sm text-slate-400">No price</p>
-          )}
-        </div>
-        <button
-          className="bg-primary/10 hover:bg-primary p-2 sm:p-2.5 rounded-lg sm:rounded-xl transition-all group/cart"
-          onClick={(e) => {
-            e.preventDefault();
             addItem(id, name, imageUrl);
           }}
         >
           <img
             src="/icons/cart.png"
             alt="Cart"
-            className="h-4 w-4 sm:h-5 sm:w-5 object-contain group-hover/cart:brightness-0 group-hover/cart:invert transition-all"
+            className="h-4.5 w-4.5 sm:h-5.5 sm:w-5.5 object-contain brightness-0 invert transition-all scale-110"
           />
         </button>
+      </div>
+
+      {/* Product Details - Clean and Aligned */}
+      <div className="px-1.5 pr-8 space-y-1.5">
+        <div>
+          <Link href={productUrl(id, name)}>
+            <h4 className="font-bold text-sm sm:text-base text-slate-900 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+              {name}
+            </h4>
+          </Link>
+          <div className="flex items-center gap-1.5 mt-1">
+            {storeCount > 0 && (
+              <span className="text-[10px] sm:text-xs font-bold text-primary/60 uppercase tracking-tight">
+                {storeCount} {storeCount === 1 ? "store" : "stores"}
+              </span>
+            )}
+            {unit && (
+              <>
+                <div className="h-0.5 w-0.5 rounded-full bg-slate-300" />
+                <span className="text-[10px] sm:text-xs text-slate-400 font-medium">{unit}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col pt-1">
+          {minPrice ? (
+            <>
+              <span className="text-xl sm:text-2xl font-black text-primary tracking-tighter">
+                {formatCurrency(minPrice)}
+              </span>
+              <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wide -mt-0.5">
+                {storeCount > 1 ? "Minimum Price" : "Current Best Deal"}
+              </span>
+            </>
+          ) : (
+            <span className="text-xs font-semibold text-slate-300 italic">Currently unavailable</span>
+          )}
+        </div>
       </div>
     </div>
   );
