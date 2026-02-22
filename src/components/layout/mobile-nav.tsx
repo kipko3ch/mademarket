@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Home, Heart, User } from "lucide-react";
+import { Home, Heart, ShoppingCart, User } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
 export function MobileNav() {
   const { data: session } = useSession();
@@ -17,15 +16,15 @@ export function MobileNav() {
   );
 
   const navItems = [
-    { href: "/", label: "Home", icon: "lucide", LucideIcon: Home },
-    { href: "/saved", label: "Saved", icon: "lucide", LucideIcon: Heart },
-    { href: "/cart", label: "Cart", icon: "custom", src: "/icons/cart.png" },
-    { href: session ? "/account" : "/login", label: "Profile", icon: "lucide", LucideIcon: User },
-  ] as const;
+    { href: "/", label: "Home", Icon: Home },
+    { href: "/saved", label: "Saved", Icon: Heart },
+    { href: "/cart", label: "Cart", Icon: ShoppingCart },
+    { href: session ? "/account" : "/login", label: "Profile", Icon: User },
+  ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 safe-area-inset-bottom">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur-md">
+      <div className="flex items-center justify-around h-14 w-full px-0">
         {navItems.map((item) => {
           const isActive =
             item.href === "/"
@@ -38,36 +37,21 @@ export function MobileNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors relative",
+                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
                 isActive
                   ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-slate-400 hover:text-slate-600"
               )}
             >
               <div className="relative">
-                {item.icon === "custom" ? (
-                  <Image
-                    src={item.src}
-                    alt={item.label}
-                    width={20}
-                    height={20}
-                    className={cn(
-                      "object-contain",
-                      isActive ? "opacity-100" : "opacity-50"
-                    )}
-                  />
-                ) : (
-                  <item.LucideIcon
-                    className={cn("h-5 w-5", isActive && "stroke-[2.5px]")}
-                  />
-                )}
+                <item.Icon className={cn("h-5 w-5", isActive && "stroke-[2.5px]")} />
                 {isCart && itemCount > 0 && (
-                  <Badge className="absolute -top-1.5 -right-2 h-4 min-w-4 p-0 flex items-center justify-center text-[9px] font-bold bg-primary text-primary-foreground">
+                  <Badge className="absolute -top-1.5 -right-2.5 h-4 min-w-4 p-0 flex items-center justify-center text-[9px] font-bold bg-primary text-primary-foreground rounded-full">
                     {itemCount}
                   </Badge>
                 )}
               </div>
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className={cn("text-[10px]", isActive ? "font-bold" : "font-medium")}>{item.label}</span>
             </Link>
           );
         })}

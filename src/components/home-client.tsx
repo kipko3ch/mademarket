@@ -171,7 +171,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
     <div className="bg-background text-foreground">
       <LocationModal />
 
-      <main className="max-w-[1440px] mx-auto px-3 sm:px-4 md:px-8 py-4 sm:py-6 md:py-10">
+      <main className="max-w-[1440px] mx-auto px-4 md:px-8 py-4 sm:py-6 md:py-10">
 
         {/* ═══════════════════════════════════════════════════════════
             § 1  HERO — Dark rounded card with gradient overlay
@@ -243,7 +243,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
                 Clear
               </button>
             </div>
-            <div className="flex overflow-x-auto gap-4 pb-2 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+            <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-2 snap-x snap-mandatory scrollbar-hide">
               {recentlyViewed.map((p) => (
                 <div key={p.id} className="w-[200px] sm:w-[240px] shrink-0 snap-start">
                   <ProductCard {...p} storeCount={Number(p.storeCount)} />
@@ -271,7 +271,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-            <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+            <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 snap-x snap-mandatory scrollbar-hide">
               {dealProducts.map((p) => (
                 <div key={p.id} className="w-[220px] sm:w-[260px] shrink-0 snap-start">
                   <ProductCard {...p} storeCount={Number(p.storeCount)} />
@@ -307,7 +307,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
                 <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Link>
             </div>
-            <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-3 snap-x snap-mandatory scrollbar-hide -mx-3 px-3 sm:-mx-4 sm:px-4 md:mx-0 md:px-0">
+            <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-3 snap-x snap-mandatory scrollbar-hide">
               {popularProducts.map((p) => (
                 <div key={p.id} className="w-[180px] sm:w-[220px] md:w-[240px] shrink-0 snap-start">
                   <ProductCard {...p} storeCount={Number(p.storeCount)} />
@@ -395,7 +395,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
   const b = banners[current];
 
   return (
-    <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl mb-8 sm:mb-12 md:-mx-8">
+    <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl mb-8 sm:mb-12">
       <div className="relative min-h-[280px] sm:min-h-[380px] md:min-h-[460px] lg:min-h-[500px] flex items-center px-5 py-8 sm:px-8 sm:py-10 md:px-16 md:py-12 overflow-hidden" style={{ backgroundColor: b.bgColor || '#0f172a' }}>
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">

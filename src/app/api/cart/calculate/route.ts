@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
       .select({
         storeId: stores.id,
         storeName: stores.name,
+        storeLogoUrl: stores.logoUrl,
         storeWhatsapp: stores.whatsappNumber,
         storeWebsiteUrl: stores.websiteUrl,
         productId: storeProducts.productId,
@@ -61,11 +62,12 @@ export async function POST(req: NextRequest) {
 
       if (!storeMap.has(row.storeId)) {
         storeMap.set(row.storeId, {
-          storeId: row.storeId,
-          storeName: row.storeName,
-          storeWebsiteUrl: row.storeWebsiteUrl,
-          storeWhatsapp: row.storeWhatsapp,
-          total: 0,
+            storeId: row.storeId,
+            storeName: row.storeName,
+            storeLogoUrl: row.storeLogoUrl,
+            storeWebsiteUrl: row.storeWebsiteUrl,
+            storeWhatsapp: row.storeWhatsapp,
+            total: 0,
           itemCount: 0,
           totalItems: totalItemsRequested,
           hasAllItems: false,

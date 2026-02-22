@@ -52,6 +52,7 @@ export interface CartItem {
 export interface CartStoreBreakdown {
   storeId: string;
   storeName: string;
+  storeLogoUrl?: string | null;
   storeWebsiteUrl?: string | null;
   storeWhatsapp?: string | null;
   total: number;

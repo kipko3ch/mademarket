@@ -58,7 +58,7 @@ export function Header() {
         ? "bg-white/90 backdrop-blur-md border-b border-primary/10 shadow-sm"
         : "bg-transparent md:bg-background border-b-0 shadow-none"
     )}>
-      <div className="flex h-14 items-center justify-between gap-3 px-3 sm:px-4 md:px-8 mx-auto w-full max-w-[1440px] relative">
+      <div className="flex h-14 items-center justify-between gap-2 px-4 md:px-8 mx-auto w-full max-w-[1440px] relative overflow-x-hidden">
         {/* Mobile Search Overlay */}
         <div className={cn(
           "absolute inset-0 bg-background md:hidden items-center px-4 transition-all duration-300 z-[70] flex",

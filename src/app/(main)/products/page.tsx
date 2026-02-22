@@ -89,7 +89,7 @@ function ProductsContent() {
         ]);
         if (catRes.ok) setCategories(await catRes.json());
         if (storeRes.ok) setStores(await storeRes.json());
-      } catch {}
+      } catch { }
     }
     fetchMeta();
   }, []);
@@ -324,7 +324,7 @@ function ProductsContent() {
 
 export default function ProductsPage() {
   return (
-    <div className="max-w-[1440px] mx-auto px-3 sm:px-4 md:px-8 py-4 sm:py-6 md:py-8">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-8 py-4 sm:py-6 md:py-8">
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <h1 className="font-heading text-2xl sm:text-3xl md:text-4xl text-slate-900">
