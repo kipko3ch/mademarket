@@ -244,7 +244,7 @@ export function Header() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-red-600 focus:text-red-600 px-4 py-2.5"
-                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  onClick={() => signOut({ callbackUrl: window.location.origin + "/login" })}
                 >
                   <LogOut className="h-4 w-4 mr-3" />
                   <span className="text-sm font-medium">Sign Out</span>
@@ -381,7 +381,7 @@ export function Header() {
               {session?.user ? (
                 <div className="p-4 border-t bg-slate-50 mt-auto">
                   <button
-                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    onClick={() => signOut({ callbackUrl: window.location.origin + "/login" })}
                     className="w-full py-2.5 rounded-xl border border-red-200 bg-white text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
                   >
                     <LogOut className="h-4 w-4" />

@@ -8,6 +8,7 @@ import { ProductCard } from "@/components/products/product-card";
 import { LocationModal } from "@/components/location-modal";
 import { BrochuresSection } from "@/components/brochures-section";
 import { formatCurrency } from "@/lib/currency";
+import { cn } from "@/lib/utils";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -299,27 +300,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
             § 4.7  BUNDLES — Store bundles with external redirect
         ═══════════════════════════════════════════════════════════ */}
         {bundles.length > 0 && (
-          <section className="mb-8 sm:mb-12">
-            <div className="flex items-center justify-between mb-5 sm:mb-6">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/icons/bundle.png" alt="Bundles" className="h-full w-full object-contain" />
-                </div>
-                <div>
-                  <h2 className="font-heading text-lg sm:text-xl md:text-2xl text-slate-900">
-                    Store Bundles
-                  </h2>
-                  <p className="text-slate-500 text-[10px] sm:text-xs">Curated bundles from top retailers</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-3 snap-x snap-mandatory scrollbar-hide -mx-3 px-3 sm:-mx-4 sm:px-4 md:mx-0 md:px-0">
-              {bundles.map((bundle) => (
-                <BundleCard key={bundle.id} bundle={bundle} />
-              ))}
-            </div>
-          </section>
+          <BundleCarousel bundles={bundles} />
         )}
 
         {/* ═══════════════════════════════════════════════════════════
@@ -454,7 +435,72 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
   );
 }
 
-// ─── Retailer Marquee ───────────────────────────────────────────────────────
+// ─── Bundle Carousel ─────────────────────────────────────────────────────────
+
+function BundleCarousel({ bundles }: { bundles: BundleData[] }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const visibleCount = typeof window !== "undefined" && window.innerWidth >= 768 ? 3 : typeof window !== "undefined" && window.innerWidth >= 640 ? 2 : 1;
+  const totalPages = Math.ceil(bundles.length / visibleCount);
+
+  useEffect(() => {
+    if (isPaused || totalPages <= 1) return;
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % totalPages);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isPaused, totalPages]);
+
+  const visibleBundles = bundles.slice(
+    activeIndex * visibleCount,
+    activeIndex * visibleCount + visibleCount
+  );
+
+  return (
+    <section className="mb-8 sm:mb-12">
+      <div className="flex items-center justify-between mb-5 sm:mb-6">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icons/bundle.png" alt="Bundles" className="h-full w-full object-contain" />
+          </div>
+          <div>
+            <h2 className="font-heading text-lg sm:text-xl md:text-2xl text-slate-900">
+              Store Bundles
+            </h2>
+            <p className="text-slate-500 text-[10px] sm:text-xs">Curated bundles from top retailers</p>
+          </div>
+        </div>
+        {/* Page indicators */}
+        {totalPages > 1 && (
+          <div className="flex items-center gap-1.5">
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveIndex(i)}
+                className={cn(
+                  "transition-all duration-300 rounded-full",
+                  i === activeIndex
+                    ? "w-6 h-2 bg-primary"
+                    : "w-2 h-2 bg-slate-200 hover:bg-slate-300"
+                )}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+      <div
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        {visibleBundles.map((bundle) => (
+          <BundleCard key={bundle.id} bundle={bundle} />
+        ))}
+      </div>
+    </section>
+  );
+}
 
 // ─── Bundle Card ─────────────────────────────────────────────────────────────
 
@@ -471,7 +517,7 @@ function BundleCard({ bundle }: { bundle: BundleData }) {
       href={href}
       target={isExternal ? "_blank" : undefined}
       rel={isExternal ? "noopener noreferrer" : undefined}
-      className="w-[260px] sm:w-[300px] shrink-0 snap-start bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-lg hover:border-primary/20 transition-all group cursor-pointer"
+      className="w-full bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-lg hover:border-primary/20 transition-all group cursor-pointer"
     >
       {/* Bundle Image */}
       <div className="relative h-36 sm:h-44 bg-slate-50 overflow-hidden">
@@ -539,9 +585,13 @@ function RetailerMarquee({ stores }: { stores: StoreData[] }) {
   const scrollDuration = `${unique.length * 4}s`;
 
   return (
-    <div className="relative py-3 sm:py-4 bg-white rounded-xl sm:rounded-2xl border border-primary/5 overflow-hidden">
+    <div className="relative py-4 sm:py-6 bg-white overflow-hidden group/marquee">
+      {/* Soft gradient fades on both sides for a smoother look */}
+      <div className="absolute inset-y-0 left-0 w-16 sm:w-32 bg-gradient-to-r from-white via-white/80 to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-16 sm:w-32 bg-gradient-to-l from-white via-white/80 to-transparent z-10 pointer-events-none" />
+
       <div
-        className="flex w-fit animate-scroll items-center gap-6 sm:gap-10 md:gap-14 lg:gap-20 px-4 hover:[animation-play-state:paused] will-change-transform"
+        className="flex w-fit animate-scroll items-center gap-8 sm:gap-16 md:gap-20 px-6 sm:px-12 hover:[animation-play-state:paused] will-change-transform"
         style={{ "--scroll-offset": scrollPercent, "--scroll-duration": scrollDuration } as React.CSSProperties}
       >
         {doubled.map((s, i) => {
@@ -552,18 +602,22 @@ function RetailerMarquee({ stores }: { stores: StoreData[] }) {
             <Link
               key={`${s.id}-${i}`}
               href={href}
-              className="flex-shrink-0 flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-all duration-300"
+              className="flex-shrink-0 flex flex-col items-center gap-2.5 group transition-all duration-300"
             >
-              {s.logoUrl ? (
-                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg overflow-hidden flex items-center justify-center bg-white border border-slate-100 p-0.5 sm:p-1">
-                  <img src={s.logoUrl} alt={s.name} className="max-h-full max-w-full object-contain" />
-                </div>
-              ) : (
-                <div className={`w-9 h-9 sm:w-12 sm:h-12 ${colorClass} rounded-lg flex items-center justify-center text-white font-bold text-base sm:text-xl`}>
-                  {s.name.charAt(0)}
-                </div>
-              )}
-              <span className="text-sm sm:text-base font-semibold text-slate-700 tracking-tight whitespace-nowrap">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center transition-all duration-300">
+                {s.logoUrl ? (
+                  <img
+                    src={s.logoUrl}
+                    alt={s.name}
+                    className="max-h-full max-w-full object-contain transition-all duration-500"
+                  />
+                ) : (
+                  <div className={`w-full h-full ${colorClass} rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-xl`}>
+                    {s.name.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-primary transition-colors">
                 {s.name}
               </span>
             </Link>

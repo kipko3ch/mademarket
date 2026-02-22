@@ -54,7 +54,7 @@ export default function VendorSponsoredPage() {
             if (prodRes.ok) setProducts(await prodRes.json());
           }
         }
-      } catch {}
+      } catch { }
     }
     fetchData();
   }, []);
@@ -94,16 +94,16 @@ export default function VendorSponsoredPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Sponsored Ads</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Promote your products to appear at the top of search results
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               New Sponsored Ad
             </Button>
@@ -184,10 +184,10 @@ export default function VendorSponsoredPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <Badge variant="outline">Level 1 — Basic placement</Badge>
-            <Badge variant="outline">Level 2 — Premium placement</Badge>
-            <Badge variant="outline">Level 3 — Featured (top spot)</Badge>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <Badge variant="outline" className="justify-center py-1">Level 1 — Basic placement</Badge>
+            <Badge variant="outline" className="justify-center py-1">Level 2 — Premium placement</Badge>
+            <Badge variant="outline" className="justify-center py-1">Level 3 — Featured (top spot)</Badge>
           </div>
         </CardContent>
       </Card>

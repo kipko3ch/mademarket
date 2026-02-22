@@ -87,7 +87,7 @@ export function VendorHeader() {
             </nav>
             <div className="p-4 border-t border-slate-100 mt-auto bg-slate-50">
               <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={() => signOut({ callbackUrl: window.location.origin + "/login" })}
                 className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-colors cursor-pointer"
               >
                 <LogOut className="h-4 w-4" />
@@ -133,7 +133,7 @@ export function VendorHeader() {
           </div>
 
           <button
-            onClick={(e) => { e.stopPropagation(); signOut({ callbackUrl: "/login" }); }}
+            onClick={(e) => { e.stopPropagation(); signOut({ callbackUrl: window.location.origin + "/login" }); }}
             className="sm:hidden p-1.5 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
           >
             <LogOut className="h-4 w-4" />
