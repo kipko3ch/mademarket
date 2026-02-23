@@ -73,7 +73,7 @@ export default function OrdersPage() {
 
       <div className="mb-10">
         <h1 className="text-2xl md:text-3xl font-black text-slate-900">
-          <span className="highlighter-red text-red-600">My</span> Orders
+          <span className="highlighter text-red-600">My</span> Orders
         </h1>
         <p className="text-slate-500 mt-2">
           Your purchase history and order tracking.

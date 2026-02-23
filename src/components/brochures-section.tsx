@@ -51,7 +51,7 @@ export function BrochuresSection() {
           </div>
           <div>
             <h2 className="font-heading text-xl sm:text-2xl md:text-3xl text-slate-900">
-              Store Brochures
+              <span className="highlighter text-red-600">Store</span> Brochures
             </h2>
             <p className="text-slate-500 mt-0.5 sm:mt-1 text-xs sm:text-sm">
               Browse the latest weekly catalogue leaflets directly.

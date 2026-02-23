@@ -331,7 +331,7 @@ export default function ProductsPage() {
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <h1 className="font-heading text-2xl sm:text-3xl md:text-4xl text-slate-900">
-          <span className="highlighter-red text-red-600">Browse</span> Products
+          <span className="highlighter text-red-600">Browse</span> Products
         </h1>
         <p className="text-slate-500 mt-1 text-xs sm:text-sm">
           Compare prices across vendors and find the best deals in Namibia

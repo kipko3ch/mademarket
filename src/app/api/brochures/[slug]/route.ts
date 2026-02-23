@@ -31,7 +31,9 @@ export async function GET(
         vendorSlug: vendors.slug,
         vendorLogo: vendors.logoUrl,
         vendorBanner: vendors.bannerUrl,
+        vendorWebsiteUrl: vendors.websiteUrl,
         branchTown: branches.town,
+        branchWhatsapp: branches.whatsappNumber,
       })
       .from(brochures)
       .innerJoin(branches, eq(brochures.branchId, branches.id))

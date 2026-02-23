@@ -39,11 +39,7 @@ export async function GET(
         vendorWebsiteUrl: vendors.websiteUrl,
       })
       .from(bundles)
-      .innerJoin(branches, and(
-        eq(bundles.branchId, branches.id),
-        eq(branches.approved, true),
-        eq(branches.active, true)
-      ))
+      .innerJoin(branches, eq(bundles.branchId, branches.id))
       .innerJoin(vendors, and(
         eq(branches.vendorId, vendors.id),
         eq(vendors.approved, true),

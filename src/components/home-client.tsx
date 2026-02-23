@@ -201,7 +201,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
             <div className="flex items-center justify-between mb-5 sm:mb-8">
               <div>
                 <h2 className="font-heading text-xl sm:text-2xl md:text-3xl text-slate-900">
-                  <span className="highlighter-red text-red-600">Featured</span> Deals
+                  <span className="highlighter text-red-600">Featured</span> Deals
                 </h2>
                 <p className="text-slate-500 mt-0.5 sm:mt-1 text-xs sm:text-sm">
                   Hand-picked lowest prices today
@@ -237,7 +237,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
           <section className="mb-12">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-heading text-xl md:text-2xl text-slate-900">
-                <span className="highlighter-red">Recently</span> Viewed
+                <span className="highlighter text-red-600">Recently</span> Viewed
               </h2>
               <button
                 onClick={() => { localStorage.removeItem("recently_viewed"); setRecentlyViewed([]); }}
@@ -263,7 +263,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
           <section className="mb-12">
             <div className="flex items-end justify-between gap-4 mb-6">
               <div>
-                <h2 className="font-heading text-xl md:text-2xl text-slate-900"><span className="highlighter-red text-red-600">Popular</span> Deals</h2>
+                <h2 className="font-heading text-xl md:text-2xl text-slate-900"><span className="highlighter text-red-600">Popular</span> Deals</h2>
                 <p className="text-slate-500 mt-1 text-sm">Products with the biggest price drops.</p>
               </div>
               <Link
@@ -297,7 +297,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
                 </div>
                 <div>
                   <h2 className="font-heading text-lg sm:text-xl md:text-2xl text-slate-900">
-                    Popular <span className="highlighter-red text-red-600">Right Now</span>
+                    Popular <span className="highlighter text-red-600">Right Now</span>
                   </h2>
                   <p className="text-slate-500 text-[10px] sm:text-xs">Most searched & clicked products</p>
                 </div>
@@ -340,7 +340,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
           <div className="bg-primary/5 rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col justify-center border border-primary/10">
             <img src="/icons/wallet.png" alt="Savings" className="h-8 w-8 sm:h-12 sm:w-12 object-contain mb-3 sm:mb-4" />
             <h3 className="font-heading text-xl sm:text-2xl text-slate-900 mb-2 sm:mb-4">
-              Save up to <span className="highlighter-red text-red-600">30%</span> monthly
+              Save up to <span className="highlighter text-red-600">30%</span> monthly
             </h3>
             <p className="text-slate-600 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
               Our users save an average of N$ 450 every month just by switching their store for basic essentials.
@@ -364,7 +364,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
             <div className="relative z-10">
               <img src="/icons/smartcart.png" alt="Smart Cart" className="h-8 w-8 sm:h-12 sm:w-12 object-contain mb-3 sm:mb-4 brightness-0 invert" />
               <h3 className="font-heading text-xl sm:text-2xl mb-2 sm:mb-4 text-white">
-                <span className="highlighter-red">Smart Cart</span> Comparison
+                <span className="highlighter highlighter-brand-red text-white">Smart Cart</span> Comparison
               </h3>
               <p className="text-slate-300 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
                 Add items to your cart and we&apos;ll instantly compare branches across Namibia to find which one gives you the absolute lowest total.
@@ -490,7 +490,7 @@ function BundleCarousel({ bundles }: { bundles: BundleData[] }) {
           </div>
           <div>
             <h2 className="font-heading text-lg sm:text-xl md:text-2xl text-slate-900">
-              <span className="highlighter-red text-red-600">Store</span> Bundles
+              <span className="highlighter text-red-600">Store</span> Bundles
             </h2>
             <p className="text-slate-500 text-[10px] sm:text-xs">Curated bundles from top retailers</p>
           </div>
