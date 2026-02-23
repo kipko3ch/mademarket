@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { brochures, branches, vendors, bundles } from "@/db/schema";
+import { brochures, branches, vendors } from "@/db/schema";
 import { eq, and, ne, desc } from "drizzle-orm";
 
 // GET /api/brochures/[slug] — Return single brochure by slug with vendor/branch info and related items
@@ -77,29 +77,6 @@ export async function GET(
       .orderBy(desc(brochures.createdAt))
       .limit(4);
 
-    // Fetch related bundles (same branch, active, limit 4)
-    const relatedBundles = await db
-      .select({
-        id: bundles.id,
-        name: bundles.name,
-        slug: bundles.slug,
-        description: bundles.description,
-        imageUrl: bundles.imageUrl,
-        price: bundles.price,
-        externalUrl: bundles.externalUrl,
-        items: bundles.items,
-        branchId: bundles.branchId,
-      })
-      .from(bundles)
-      .where(
-        and(
-          eq(bundles.branchId, result.branchId!),
-          eq(bundles.active, true)
-        )
-      )
-      .orderBy(desc(bundles.createdAt))
-      .limit(4);
-
     return NextResponse.json({
       brochure: {
         ...result,
@@ -110,10 +87,6 @@ export async function GET(
         storeBanner: result.vendorBanner,
       },
       relatedBrochures,
-      relatedBundles: relatedBundles.map((b) => ({
-        ...b,
-        price: Number(b.price),
-      })),
     });
   } catch (error) {
     console.error("Error fetching brochure:", error);

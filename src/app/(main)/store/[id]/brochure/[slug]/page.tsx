@@ -34,14 +34,6 @@ interface RelatedBrochure {
   validUntil: string | null;
 }
 
-interface RelatedBundle {
-  id: string;
-  name: string;
-  slug: string;
-  imageUrl: string | null;
-  price: number | null;
-}
-
 export default function BrochureDetailPage({
   params,
 }: {
@@ -50,7 +42,6 @@ export default function BrochureDetailPage({
   const { id, slug } = use(params);
   const [brochure, setBrochure] = useState<Brochure | null>(null);
   const [relatedBrochures, setRelatedBrochures] = useState<RelatedBrochure[]>([]);
-  const [relatedBundles, setRelatedBundles] = useState<RelatedBundle[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -65,7 +56,6 @@ export default function BrochureDetailPage({
         const data = await res.json();
         setBrochure(data.brochure);
         setRelatedBrochures(data.relatedBrochures || []);
-        setRelatedBundles(data.relatedBundles || []);
       } catch {
         if (!notFound) setNotFound(true);
       } finally {
@@ -127,7 +117,6 @@ export default function BrochureDetailPage({
         ...rb,
         validUntil: rb.validUntil,
       }))}
-      relatedBundles={relatedBundles}
     />
   );
 }
