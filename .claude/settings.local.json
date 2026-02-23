@@ -6,7 +6,8 @@
       "Bash(npx:*)",
       "Bash(set:*)",
       "Bash(source .env.local)",
-      "Bash(set +a)"
+      "Bash(set +a)",
+      "Bash(cat:*)"
     ]
   }
 }
