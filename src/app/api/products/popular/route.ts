@@ -6,10 +6,12 @@ import {
   products,
   productClicks,
   storeProducts,
+  branches,
+  vendors,
   categories,
   searchLogs,
 } from "@/db/schema";
-import { eq, gte, sql } from "drizzle-orm";
+import { eq, and, gte, isNotNull, sql } from "drizzle-orm";
 
 // GET /api/products/popular — Return top 10 popular products
 // Popularity is based on productClicks (last 30 days) + searchLogs references
@@ -62,7 +64,20 @@ export async function GET() {
       })
       .from(products)
       .leftJoin(categories, eq(products.categoryId, categories.id))
-      .leftJoin(storeProducts, eq(products.id, storeProducts.productId))
+      .leftJoin(storeProducts, and(
+        eq(products.id, storeProducts.productId),
+        isNotNull(storeProducts.branchId)
+      ))
+      .leftJoin(branches, and(
+        eq(storeProducts.branchId, branches.id),
+        eq(branches.approved, true),
+        eq(branches.active, true)
+      ))
+      .leftJoin(vendors, and(
+        eq(branches.vendorId, vendors.id),
+        eq(vendors.approved, true),
+        eq(vendors.active, true)
+      ))
       .leftJoin(clickCounts, eq(products.id, clickCounts.productId))
       .leftJoin(searchCounts, eq(products.id, searchCounts.productId))
       .groupBy(
@@ -75,7 +90,7 @@ export async function GET() {
         searchCounts.searchCount
       )
       .having(
-        sql`coalesce(${clickCounts.clickCount}, 0) + coalesce(${searchCounts.searchCount}, 0) > 0`
+        sql`coalesce(${clickCounts.clickCount}, 0) + coalesce(${searchCounts.searchCount}, 0) > 0 AND count(distinct ${vendors.id}) > 0`
       )
       .orderBy(
         sql`coalesce(${clickCounts.clickCount}, 0) + coalesce(${searchCounts.searchCount}, 0) desc`

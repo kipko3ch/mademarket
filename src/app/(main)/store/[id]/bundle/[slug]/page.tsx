@@ -91,10 +91,10 @@ export default function BundleDetailPage({
 
   if (loading || redirecting) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-3">
-        <Loader2 className="h-8 w-8 text-white animate-spin" />
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-3">
+        <Loader2 className="h-8 w-8 text-slate-400 animate-spin" />
         {redirecting && (
-          <p className="text-white/60 text-sm">Redirecting to store...</p>
+          <p className="text-slate-500 text-sm">Redirecting to store...</p>
         )}
       </div>
     );

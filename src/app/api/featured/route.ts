@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { featuredProducts, products, storeProducts, categories } from "@/db/schema";
-import { eq, and, gte, sql } from "drizzle-orm";
+import { featuredProducts, products, storeProducts, branches, vendors, categories } from "@/db/schema";
+import { eq, and, gte, isNotNull, sql } from "drizzle-orm";
 
 // GET /api/featured — Return active, non-expired featured products with product details
 export async function GET() {
@@ -25,8 +25,21 @@ export async function GET() {
       })
       .from(featuredProducts)
       .innerJoin(products, eq(featuredProducts.productId, products.id))
+      .innerJoin(storeProducts, and(
+        eq(products.id, storeProducts.productId),
+        isNotNull(storeProducts.branchId)
+      ))
+      .innerJoin(branches, and(
+        eq(storeProducts.branchId, branches.id),
+        eq(branches.approved, true),
+        eq(branches.active, true)
+      ))
+      .innerJoin(vendors, and(
+        eq(branches.vendorId, vendors.id),
+        eq(vendors.approved, true),
+        eq(vendors.active, true)
+      ))
       .leftJoin(categories, eq(products.categoryId, categories.id))
-      .leftJoin(storeProducts, eq(products.id, storeProducts.productId))
       .where(
         and(
           eq(featuredProducts.active, true),

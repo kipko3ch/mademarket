@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { heroBanners, vendors, branches, stores, products, storeProducts, categories, featuredProducts, productClicks, bundles, searchLogs } from "@/db/schema";
-import { eq, sql, asc, desc, and, gte } from "drizzle-orm";
+import { eq, sql, asc, desc, and, gte, isNotNull } from "drizzle-orm";
 import { HomeClient } from "@/components/home-client";
 
 // Revalidate every 60 seconds — always fast, always fresh
@@ -50,7 +50,7 @@ export default async function HomePage() {
       .orderBy(asc(branches.marqueeOrder))
       .catch(() => []),
 
-    // 3. Products with prices (general listing)
+    // 3. Products with prices (general listing) — only products with active sellers
     db
       .select({
         id: products.id,
@@ -65,13 +65,26 @@ export default async function HomePage() {
         storeCount: sql<number>`count(distinct ${storeProducts.branchId})`.as("store_count"),
       })
       .from(products)
-      .leftJoin(storeProducts, eq(products.id, storeProducts.productId))
+      .innerJoin(storeProducts, and(
+        eq(products.id, storeProducts.productId),
+        isNotNull(storeProducts.branchId)
+      ))
+      .innerJoin(branches, and(
+        eq(storeProducts.branchId, branches.id),
+        eq(branches.approved, true),
+        eq(branches.active, true)
+      ))
+      .innerJoin(vendors, and(
+        eq(branches.vendorId, vendors.id),
+        eq(vendors.approved, true),
+        eq(vendors.active, true)
+      ))
       .leftJoin(categories, eq(products.categoryId, categories.id))
       .groupBy(products.id, products.name, products.normalizedName, products.imageUrl, products.unit, products.categoryId, categories.name)
       .limit(12)
       .catch(() => []),
 
-    // 4. Featured products (admin-controlled)
+    // 4. Featured products (admin-controlled) — only with active sellers
     db
       .select({
         id: products.id,
@@ -88,7 +101,20 @@ export default async function HomePage() {
       })
       .from(featuredProducts)
       .innerJoin(products, eq(featuredProducts.productId, products.id))
-      .leftJoin(storeProducts, eq(products.id, storeProducts.productId))
+      .innerJoin(storeProducts, and(
+        eq(products.id, storeProducts.productId),
+        isNotNull(storeProducts.branchId)
+      ))
+      .innerJoin(branches, and(
+        eq(storeProducts.branchId, branches.id),
+        eq(branches.approved, true),
+        eq(branches.active, true)
+      ))
+      .innerJoin(vendors, and(
+        eq(branches.vendorId, vendors.id),
+        eq(vendors.approved, true),
+        eq(vendors.active, true)
+      ))
       .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(
         and(
@@ -101,7 +127,7 @@ export default async function HomePage() {
       .limit(8)
       .catch(() => []),
 
-    // 5. Popular products (by click count in last 30 days)
+    // 5. Popular products (by click count in last 30 days) — only with active sellers
     db
       .select({
         id: products.id,
@@ -114,15 +140,28 @@ export default async function HomePage() {
         minPrice: sql<number>`min(${storeProducts.price})`.as("min_price"),
         maxPrice: sql<number>`max(${storeProducts.price})`.as("max_price"),
         storeCount: sql<number>`count(distinct ${storeProducts.branchId})`.as("store_count"),
-        clickCount: sql<number>`count(${productClicks.id})`.as("click_count"),
+        clickCount: sql<number>`count(distinct ${productClicks.id})`.as("click_count"),
       })
       .from(productClicks)
       .innerJoin(products, eq(productClicks.productId, products.id))
-      .leftJoin(storeProducts, eq(products.id, storeProducts.productId))
+      .innerJoin(storeProducts, and(
+        eq(products.id, storeProducts.productId),
+        isNotNull(storeProducts.branchId)
+      ))
+      .innerJoin(branches, and(
+        eq(storeProducts.branchId, branches.id),
+        eq(branches.approved, true),
+        eq(branches.active, true)
+      ))
+      .innerJoin(vendors, and(
+        eq(branches.vendorId, vendors.id),
+        eq(vendors.approved, true),
+        eq(vendors.active, true)
+      ))
       .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(gte(productClicks.createdAt, thirtyDaysAgo))
       .groupBy(products.id, products.name, products.normalizedName, products.imageUrl, products.unit, products.categoryId, categories.name)
-      .orderBy(desc(sql`count(${productClicks.id})`))
+      .orderBy(desc(sql`count(distinct ${productClicks.id})`))
       .limit(10)
       .catch(() => []),
 

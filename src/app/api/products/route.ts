@@ -50,11 +50,26 @@ export async function GET(req: NextRequest) {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // Get total count
+    // Get total count — only products with at least one active seller
+    const countConditions = whereClause ? [whereClause] : [];
     const [countResult] = await db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: sql<number>`count(distinct ${products.id})` })
       .from(products)
-      .where(whereClause);
+      .innerJoin(storeProducts, and(
+        eq(products.id, storeProducts.productId),
+        isNotNull(storeProducts.branchId)
+      ))
+      .innerJoin(branches, and(
+        eq(storeProducts.branchId, branches.id),
+        eq(branches.approved, true),
+        eq(branches.active, true)
+      ))
+      .innerJoin(vendors, and(
+        eq(branches.vendorId, vendors.id),
+        eq(vendors.approved, true),
+        eq(vendors.active, true)
+      ))
+      .where(countConditions.length > 0 ? and(...countConditions) : undefined);
 
     const total = Number(countResult.count);
 
@@ -114,7 +129,7 @@ export async function GET(req: NextRequest) {
       branchJoinConditions.push(eq(storeProducts.branchId, branchId));
     }
 
-    // Main query: products with min price across branches
+    // Main query: products with min price across approved+active branches/vendors only
     const selectFields = {
       id: products.id,
       name: products.name,
@@ -125,7 +140,7 @@ export async function GET(req: NextRequest) {
       categoryName: categories.name,
       minPrice: sql<number>`min(${storeProducts.price})`.as("min_price"),
       maxPrice: sql<number>`max(${storeProducts.price})`.as("max_price"),
-      branchCount: sql<number>`count(distinct ${storeProducts.branchId})`.as("branch_count"),
+      storeCount: sql<number>`count(distinct ${storeProducts.branchId})`.as("store_count"),
     };
 
     const groupByFields = [products.id, products.name, products.normalizedName, products.imageUrl, products.unit, products.categoryId, categories.name] as const;
@@ -140,10 +155,18 @@ export async function GET(req: NextRequest) {
     const productResults = await db
       .select(selectFields)
       .from(products)
-      .leftJoin(storeProducts, and(...branchJoinConditions))
+      .innerJoin(storeProducts, and(...branchJoinConditions))
       .leftJoin(categories, eq(products.categoryId, categories.id))
-      .leftJoin(branches, eq(storeProducts.branchId, branches.id))
-      .leftJoin(vendors, eq(branches.vendorId, vendors.id))
+      .innerJoin(branches, and(
+        eq(storeProducts.branchId, branches.id),
+        eq(branches.approved, true),
+        eq(branches.active, true)
+      ))
+      .innerJoin(vendors, and(
+        eq(branches.vendorId, vendors.id),
+        eq(vendors.approved, true),
+        eq(vendors.active, true)
+      ))
       .where(fullWhere)
       .groupBy(...groupByFields)
       .limit(pageSize)

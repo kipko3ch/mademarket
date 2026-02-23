@@ -97,12 +97,12 @@ export function ContentViewer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col">
+    <div className="fixed inset-0 z-50 bg-slate-50 flex flex-col">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-3 sm:px-6 py-3 bg-black/60 backdrop-blur-md z-20 shrink-0">
+      <div className="flex items-center justify-between px-3 sm:px-6 py-3 bg-white/80 backdrop-blur-md border-b border-slate-200 z-20 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <Link href={backHref}>
-            <button className="h-9 w-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+            <button className="h-9 w-9 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors">
               <X className="h-4 w-4" />
             </button>
           </Link>
@@ -111,8 +111,8 @@ export function ContentViewer({
               <img src={storeLogo} alt="" className="h-7 w-7 rounded-lg object-contain bg-white p-0.5 shrink-0" />
             )}
             <div className="min-w-0">
-              <p className="text-white text-sm font-semibold truncate">{title}</p>
-              <p className="text-white/50 text-xs truncate">{storeName}</p>
+              <p className="text-slate-900 text-sm font-semibold truncate">{title}</p>
+              <p className="text-slate-500 text-xs truncate">{storeName}</p>
             </div>
           </div>
         </div>
@@ -120,14 +120,14 @@ export function ContentViewer({
           {hasImages && (
             <button
               onClick={() => setZoomed(!zoomed)}
-              className="h-9 w-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              className="h-9 w-9 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
             >
               {zoomed ? <ZoomOut className="h-4 w-4" /> : <ZoomIn className="h-4 w-4" />}
             </button>
           )}
           <button
             onClick={() => setShowInfo(!showInfo)}
-            className="h-9 px-3 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors"
+            className="h-9 px-3 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium transition-colors"
           >
             {showInfo ? "Hide Info" : "Show Info"}
           </button>
@@ -135,7 +135,7 @@ export function ContentViewer({
       </div>
 
       {/* Main image area */}
-      <div className="flex-1 relative flex items-center justify-center overflow-hidden">
+      <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-white">
         {currentImage ? (
           <img
             src={currentImage}
@@ -148,7 +148,7 @@ export function ContentViewer({
             onClick={() => setZoomed(!zoomed)}
           />
         ) : (
-          <div className="flex flex-col items-center justify-center text-white/30">
+          <div className="flex flex-col items-center justify-center text-slate-300">
             {type === "brochure" ? (
               <FileText className="h-16 w-16 mb-3" />
             ) : (
@@ -164,14 +164,14 @@ export function ContentViewer({
             <button
               onClick={goPrev}
               disabled={currentIndex === 0}
-              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 text-white disabled:opacity-30 transition-all"
+              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center rounded-full bg-white/80 hover:bg-white border border-slate-200 text-slate-700 shadow-sm disabled:opacity-30 transition-all"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
             <button
               onClick={goNext}
               disabled={currentIndex === images.length - 1}
-              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 text-white disabled:opacity-30 transition-all"
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center rounded-full bg-white/80 hover:bg-white border border-slate-200 text-slate-700 shadow-sm disabled:opacity-30 transition-all"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
@@ -180,7 +180,7 @@ export function ContentViewer({
 
         {/* Image counter */}
         {hasMultiple && !zoomed && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-full">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur-sm border border-slate-200 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-full shadow-sm">
             {currentIndex + 1} / {images.length}
           </div>
         )}
@@ -188,13 +188,13 @@ export function ContentViewer({
 
       {/* Thumbnail strip */}
       {hasMultiple && !zoomed && (
-        <div className="flex gap-2 px-4 py-3 bg-black/40 overflow-x-auto scrollbar-hide justify-center shrink-0">
+        <div className="flex gap-2 px-4 py-3 bg-slate-100 border-t border-slate-200 overflow-x-auto scrollbar-hide justify-center shrink-0">
           {images.map((img, i) => (
             <button
               key={i}
               onClick={() => setCurrentIndex(i)}
               className={`h-12 w-12 sm:h-14 sm:w-14 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${
-                i === currentIndex ? "border-white opacity-100" : "border-transparent opacity-50 hover:opacity-75"
+                i === currentIndex ? "border-primary opacity-100" : "border-slate-200 opacity-60 hover:opacity-90"
               }`}
             >
               <img src={img} alt="" className="h-full w-full object-cover" />
