@@ -143,10 +143,12 @@ export default function BrochureDetailPage({
       {/* Back link */}
       <Link
         href={`/store/${id}`}
-        className="inline-flex items-center text-sm text-slate-500 hover:text-primary mb-4 sm:mb-5 transition-colors"
+        className="group inline-flex items-center gap-2 text-sm text-slate-500 hover:text-primary mb-4 sm:mb-6 transition-all"
       >
-        <ArrowLeft className="h-4 w-4 mr-1" />
-        Back to Store
+        <div className="flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 group-hover:bg-primary group-hover:text-white transition-all">
+          <ArrowLeft className="h-4 w-4" />
+        </div>
+        <span className="font-medium">Back to Store</span>
       </Link>
 
       {/* Store Banner */}

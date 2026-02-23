@@ -189,7 +189,7 @@ export default function VendorBranchesPage() {
             </Button>
           </DialogTrigger>
 
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingId ? "Edit Branch" : "Add New Branch"}
@@ -201,7 +201,7 @@ export default function VendorBranchesPage() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 pt-2 pb-4">
               {/* Branch Name */}
               <div className="space-y-2">
                 <Label htmlFor="branchName">Branch Name *</Label>

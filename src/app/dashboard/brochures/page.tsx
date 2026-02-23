@@ -252,7 +252,7 @@ export default function VendorBrochuresPage() {
               Create Brochure
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingId ? "Edit Brochure" : "Create New Brochure"}
@@ -263,7 +263,7 @@ export default function VendorBrochuresPage() {
                   : "Fill in the details to create a new brochure."}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 pb-4">
               <div className="space-y-2">
                 <Label htmlFor="brochure-title">Title *</Label>
                 <Input

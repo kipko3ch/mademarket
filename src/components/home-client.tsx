@@ -92,9 +92,9 @@ const FALLBACK_BANNERS: Banner[] = [
   {
     id: "f2",
     title: "Save up to 30% Weekly",
-    subtitle: "Smart cart auto-picks the cheapest store combination for you.",
-    ctaText: "Build Smart Cart",
-    ctaUrl: "/products",
+    subtitle: "Our shopping list tool compares local branches to find your cheapest total.",
+    ctaText: "Check Smart Cart",
+    ctaUrl: "/cart",
     imageUrl: "/images/save.png",
     bgColor: null,
   },
@@ -364,10 +364,10 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
             <div className="relative z-10">
               <img src="/icons/smartcart.png" alt="Smart Cart" className="h-8 w-8 sm:h-12 sm:w-12 object-contain mb-3 sm:mb-4 brightness-0 invert" />
               <h3 className="font-heading text-xl sm:text-2xl mb-2 sm:mb-4">
-                Smart Cart Technology
+                Smart Cart Comparison
               </h3>
               <p className="text-slate-300 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                Upload your shopping list and we&apos;ll tell you which store combo gives you the absolute lowest total.
+                Add items to your cart and we&apos;ll instantly compare branches across Namibia to find which one gives you the absolute lowest total.
               </p>
               <Link href="/cart">
                 <span className="inline-flex items-center bg-white text-primary font-semibold px-5 py-2.5 sm:px-6 sm:py-3 rounded-full text-sm hover:bg-slate-100 transition-colors cursor-pointer">

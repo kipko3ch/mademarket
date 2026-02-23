@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const branchId = searchParams.get("branchId") || searchParams.get("storeId");
+    const vendorId = searchParams.get("vendorId");
 
     const conditions = [
       eq(brochures.status, "published"),
@@ -21,6 +22,9 @@ export async function GET(request: NextRequest) {
 
     if (branchId) {
       conditions.push(eq(brochures.branchId, branchId));
+    }
+    if (vendorId) {
+      conditions.push(eq(vendors.id, vendorId));
     }
 
     const results = await db
@@ -50,12 +54,13 @@ export async function GET(request: NextRequest) {
     // Map to keep backward-compatible field names for frontend
     const mapped = results.map((r) => ({
       ...r,
+      storeId: r.vendorSlug, // used for /store/{slug}/brochure/{brochureSlug} links
       storeName: r.vendorName,
       storeSlug: r.vendorSlug,
       storeLogo: r.vendorLogo,
     }));
 
-    return NextResponse.json(mapped);
+    return NextResponse.json({ brochures: mapped });
   } catch (error) {
     console.error("Error fetching brochures:", error);
     return NextResponse.json(

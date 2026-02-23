@@ -34,10 +34,12 @@ export default function BillingPage() {
     <div className="max-w-2xl mx-auto px-4 py-8 md:py-16">
       <Link
         href="/account"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-primary transition-colors mb-8"
+        className="group inline-flex items-center gap-2 text-sm text-slate-500 hover:text-primary mb-8 transition-all"
       >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Account
+        <div className="flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 group-hover:bg-primary group-hover:text-white transition-all">
+          <ArrowLeft className="h-4 w-4" />
+        </div>
+        <span className="font-medium">Back to Account</span>
       </Link>
 
       <div className="mb-10">

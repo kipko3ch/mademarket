@@ -39,7 +39,8 @@ const createBundleSchema = z.object({
         quantity: z.number().int().positive().default(1),
       })
     )
-    .min(1, "At least one product is required"),
+    .optional()
+    .default([]),
   images: z.array(z.string().url()).optional(),
 });
 

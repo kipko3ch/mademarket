@@ -207,11 +207,6 @@ export default function VendorBundlesPage() {
       return;
     }
 
-    if (selectedProducts.length === 0) {
-      toast.error("Please add at least one product to the bundle");
-      return;
-    }
-
     setSubmitting(true);
 
     try {

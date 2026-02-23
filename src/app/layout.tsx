@@ -19,13 +19,37 @@ const sans = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "MaDe Market — Compare Grocery Prices",
+  title: "MaDe Market Namibia | Compare Grocery Prices, Specials & Deals",
   description:
-    "Compare grocery prices across multiple stores. Find the cheapest deals and save money on every shop.",
+    "Save money on your monthly groceries in Namibia. MaDe Market compares real-time prices from Shoprite, SPAR, Checkers, and Woermann Brock to find you the absolute cheapest deals.",
+  keywords: ["Grocery Comparison Namibia", "Shoprite Specials", "SPAR Namibia Deals", "Checkers Price Comparison", "Save Money Namibia", "Namibian Retailers", "Smart Shopping Namibia"],
+  authors: [{ name: "MaDe Market Team" }],
+  openGraph: {
+    title: "MaDe Market Namibia | Compare Grocery Prices & Save",
+    description: "Find the lowest grocery prices across Namibia. Compare Shoprite, SPAR, Checkers and more in one place.",
+    url: "https://mademarket.com.na",
+    siteName: "MaDe Market",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "MaDe Market - Compare Grocery Prices",
+      },
+    ],
+    locale: "en_NA",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MaDe Market Namibia | Compare Grocery Prices",
+    description: "Save up to 30% on your weekly shopping by comparing prices in Namibia.",
+    images: ["/og-image.png"],
+  },
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
 };
 
@@ -39,6 +63,22 @@ export default function RootLayout({
       <body className={`${sans.variable} ${delaGothic.variable} antialiased font-sans bg-background text-foreground`}>
         <Providers>{children}</Providers>
         <PromoPopup />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "MaDe Market Namibia",
+              "url": "https://mademarket.com.na",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://mademarket.com.na/products?search={search_term_string}",
+                "query-input": "required name=search_term_string"
+              }
+            })
+          }}
+        />
       </body>
     </html>
   );

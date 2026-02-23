@@ -168,10 +168,12 @@ export default function ProductDetailPage({
       {/* Back nav */}
       <Link
         href="/products"
-        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        className="group inline-flex items-center gap-2 text-sm text-slate-500 hover:text-primary mb-6 transition-all"
       >
-        <ArrowLeft className="h-4 w-4 mr-1" />
-        Back to Products
+        <div className="flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 group-hover:bg-primary group-hover:text-white transition-all">
+          <ArrowLeft className="h-4 w-4" />
+        </div>
+        <span className="font-medium">Back to Products</span>
       </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">

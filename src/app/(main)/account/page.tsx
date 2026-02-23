@@ -74,9 +74,14 @@ export default function AccountPage() {
     return (
         <div className="max-w-3xl mx-auto px-4 py-6 md:py-12">
             {/* Back */}
-            <Link href="/" className="inline-flex items-center text-sm text-slate-500 hover:text-primary mb-6 transition-colors">
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Home
+            <Link
+                href="/"
+                className="group inline-flex items-center gap-2 text-sm text-slate-500 hover:text-primary mb-8 transition-all"
+            >
+                <div className="flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 group-hover:bg-primary group-hover:text-white transition-all">
+                    <ArrowLeft className="h-4 w-4" />
+                </div>
+                <span className="font-medium">Home</span>
             </Link>
 
             {/* Profile Header */}
