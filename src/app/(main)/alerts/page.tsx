@@ -44,7 +44,7 @@ export default function AlertsPage() {
 
       <div className="mb-10">
         <h1 className="text-2xl md:text-3xl font-black text-slate-900">
-          Price Alerts
+          <span className="highlighter-red text-red-600">Price</span> Alerts
         </h1>
         <p className="text-slate-500 mt-2">
           Get notified when prices drop on items you care about.

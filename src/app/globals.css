@@ -200,4 +200,25 @@
     animation: scroll var(--scroll-duration, 25s) linear infinite;
     will-change: transform;
   }
+
+  .highlighter-red {
+    position: relative;
+    z-index: 1;
+    padding: 0 4px;
+  }
+
+  .highlighter-red::after {
+    content: "";
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    bottom: 2px;
+    height: 45%;
+    background-color: #ef4444;
+    /* red-500 */
+    opacity: 0.35;
+    z-index: -1;
+    transform: rotate(-0.5deg) skewX(-8deg);
+    border-radius: 2px;
+  }
 }

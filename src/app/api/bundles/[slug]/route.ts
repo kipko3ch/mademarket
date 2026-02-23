@@ -135,10 +135,19 @@ export async function GET(
     ]);
 
     return NextResponse.json({
-      ...result,
-      price: Number(result.price),
-      bundleProducts: bundleProductRows,
-      bundleImages: bundleImageRows,
+      bundle: {
+        ...result,
+        price: Number(result.price),
+        // backward-compat aliases
+        storeName: result.vendorName,
+        storeSlug: result.vendorSlug,
+        storeLogo: result.vendorLogoUrl,
+        storeBanner: result.vendorBannerUrl,
+        storeWebsite: result.vendorWebsiteUrl,
+        storeWhatsapp: result.branchWhatsapp,
+        bundleProducts: bundleProductRows,
+        bundleImages: bundleImageRows,
+      },
       relatedBundles: relatedBundles.map((b) => ({
         ...b,
         price: Number(b.price),

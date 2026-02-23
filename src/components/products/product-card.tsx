@@ -2,15 +2,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { SessionContext } from "next-auth/react";
-import { toast } from "sonner";
 import { useCart } from "@/hooks/use-cart";
 import { useSaved } from "@/hooks/use-saved";
 import { formatCurrency } from "@/lib/currency";
 import { cn, productUrl } from "@/lib/utils";
+import { LoginModal } from "@/components/login-modal";
 
 /** Safe session check — reads context directly instead of useSession() to avoid
  *  throwing when SessionProvider is missing during Turbopack HMR or navigation */
@@ -52,7 +51,7 @@ export function ProductCard({
   const isSavedInStore = useSaved((s) => s.savedIds.includes(id));
   const hasHydrated = useSaved((s) => s._hasHydrated);
   const status = useAuthStatus();
-  const router = useRouter();
+  const [showLogin, setShowLogin] = useState(false);
 
   const saved = hasHydrated ? isSavedInStore : false;
 
@@ -115,9 +114,7 @@ export function ProductCard({
             e.preventDefault();
             e.stopPropagation();
             if (status !== "authenticated") {
-              toast.error("Please sign in to add items to your cart", {
-                action: { label: "Sign In", onClick: () => router.push("/login") },
-              });
+              setShowLogin(true);
               return;
             }
             addItem(id, name, imageUrl);
@@ -168,6 +165,13 @@ export function ProductCard({
           )}
         </div>
       </div>
+
+      {/* Login modal overlay */}
+      <LoginModal
+        open={showLogin}
+        onClose={() => setShowLogin(false)}
+        onSuccess={() => addItem(id, name, imageUrl)}
+      />
     </div>
   );
 }
