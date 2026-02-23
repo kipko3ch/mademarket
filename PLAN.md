@@ -1,4 +1,4 @@
-# MaDe Market — Implementation Plan
+C# MaDe Market — Implementation Plan
 
 ## Tech Stack
 - **Framework:** Next.js 15 (App Router, TypeScript)

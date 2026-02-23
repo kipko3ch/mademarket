@@ -3,7 +3,10 @@
     "allow": [
       "Bash(node:*)",
       "Bash(npm:*)",
-      "Bash(npx:*)"
+      "Bash(npx:*)",
+      "Bash(set:*)",
+      "Bash(source .env.local)",
+      "Bash(set +a)"
     ]
   }
 }
