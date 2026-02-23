@@ -99,12 +99,14 @@ export async function GET(
       .limit(4);
 
     return NextResponse.json({
-      ...result,
-      // backward-compat aliases
-      storeName: result.vendorName,
-      storeSlug: result.vendorSlug,
-      storeLogo: result.vendorLogo,
-      storeBanner: result.vendorBanner,
+      brochure: {
+        ...result,
+        // backward-compat aliases
+        storeName: result.vendorName,
+        storeSlug: result.vendorSlug,
+        storeLogo: result.vendorLogo,
+        storeBanner: result.vendorBanner,
+      },
       relatedBrochures,
       relatedBundles: relatedBundles.map((b) => ({
         ...b,
