@@ -179,3 +179,67 @@ export async function POST(
     );
   }
 }
+
+// DELETE /api/stores/[id]/products — Permanently remove a listing from this branch
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id: branchId } = await params;
+  const session = await auth();
+
+  if (!session?.user || (session.user.role !== "vendor" && session.user.role !== "admin")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+    const { storeProductId } = body as { storeProductId: string };
+
+    if (!storeProductId) {
+      return NextResponse.json({ error: "storeProductId is required" }, { status: 400 });
+    }
+
+    // Verify the store product exists and belongs to this branch
+    const [sp] = await db
+      .select({ id: storeProducts.id, branchId: storeProducts.branchId })
+      .from(storeProducts)
+      .where(and(eq(storeProducts.id, storeProductId), eq(storeProducts.branchId, branchId)))
+      .limit(1);
+
+    if (!sp) {
+      return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+    }
+
+    // For vendors, verify they own this branch
+    if (session.user.role === "vendor") {
+      const [branch] = await db
+        .select({ vendorId: branches.vendorId })
+        .from(branches)
+        .where(eq(branches.id, branchId))
+        .limit(1);
+
+      if (!branch) {
+        return NextResponse.json({ error: "Branch not found" }, { status: 404 });
+      }
+
+      const [vendor] = await db
+        .select({ ownerId: vendors.ownerId })
+        .from(vendors)
+        .where(eq(vendors.id, branch.vendorId))
+        .limit(1);
+
+      if (!vendor || vendor.ownerId !== session.user.id) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
+    // Delete — priceHistory cascades via FK
+    await db.delete(storeProducts).where(eq(storeProducts.id, storeProductId));
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Delete listing error:", error);
+    return NextResponse.json({ error: "Failed to delete listing" }, { status: 500 });
+  }
+}

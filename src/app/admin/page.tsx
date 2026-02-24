@@ -194,7 +194,7 @@ export default function AdminPage() {
                   </p>
                 ) : (
                   <div className={cn("text-xs flex items-center gap-1.5", card.isPrimary ? "text-blue-100" : "text-slate-400")}>
-                    <div className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", card.isPrimary ? "bg-white/20 text-white" : "bg-blue-50 text-blue-600")}>
+                    <div className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", card.isPrimary ? "bg-blue-100 text-blue-700" : "bg-blue-50 text-blue-600")}>
                       ↑ Active
                     </div>
                     Updated just now

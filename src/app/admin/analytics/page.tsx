@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, TrendingUp, Users, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { BarChart3, TrendingUp, Users, Search, Download, Calendar } from "lucide-react";
+import { toast } from "sonner";
 
 interface PlatformAnalytics {
   totalUsers: number;
@@ -19,9 +22,21 @@ interface PlatformAnalytics {
   }[];
 }
 
+interface SearchReportRow {
+  query: string;
+  count: number;
+  date: string;
+}
+
 export default function AdminAnalyticsPage() {
   const [data, setData] = useState<PlatformAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [reportFrom, setReportFrom] = useState("");
+  const [reportTo, setReportTo] = useState("");
+  const [exportLoading, setExportLoading] = useState(false);
+  const [reportSearches, setReportSearches] = useState<SearchReportRow[] | null>(null);
+  const [reportFetchLoading, setReportFetchLoading] = useState(false);
 
   useEffect(() => {
     async function fetchAnalytics() {
@@ -34,6 +49,51 @@ export default function AdminAnalyticsPage() {
     }
     fetchAnalytics();
   }, []);
+
+  async function handleFetchReport() {
+    setReportFetchLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (reportFrom) params.set("from", reportFrom);
+      if (reportTo) params.set("to", reportTo);
+      const res = await fetch(`/api/admin/reports/searches/export?${params.toString()}`);
+      if (res.ok) {
+        const rows: SearchReportRow[] = await res.json();
+        setReportSearches(rows);
+      } else {
+        toast.error("Failed to fetch search report");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setReportFetchLoading(false);
+    }
+  }
+
+  async function handleExportCSV() {
+    setExportLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (reportFrom) params.set("from", reportFrom);
+      if (reportTo) params.set("to", reportTo);
+      const res = await fetch(`/api/admin/reports/searches/export?${params.toString()}`);
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "search-report.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        toast.error("Failed to export CSV");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setExportLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -155,6 +215,72 @@ export default function AdminAnalyticsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Search Report */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            Search Report
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground font-medium">From</label>
+              <Input
+                type="date"
+                value={reportFrom}
+                onChange={(e) => setReportFrom(e.target.value)}
+                className="w-40"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground font-medium">To</label>
+              <Input
+                type="date"
+                value={reportTo}
+                onChange={(e) => setReportTo(e.target.value)}
+                className="w-40"
+              />
+            </div>
+            <Button onClick={handleFetchReport} disabled={reportFetchLoading} variant="secondary">
+              {reportFetchLoading ? "Loading…" : "View Report"}
+            </Button>
+            <Button onClick={handleExportCSV} disabled={exportLoading} variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              {exportLoading ? "Exporting…" : "Export CSV"}
+            </Button>
+          </div>
+
+          {reportSearches !== null && (
+            reportSearches.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No search data for the selected range.</p>
+            ) : (
+              <div className="overflow-hidden rounded-lg border border-slate-100">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50">
+                      <th className="text-left px-4 py-3 font-medium text-slate-500">Query</th>
+                      <th className="text-left px-4 py-3 font-medium text-slate-500">Count</th>
+                      <th className="text-left px-4 py-3 font-medium text-slate-500">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportSearches.map((row, i) => (
+                      <tr key={i} className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-3 font-medium text-slate-900">{row.query}</td>
+                        <td className="px-4 py-3 text-slate-600">{row.count}</td>
+                        <td className="px-4 py-3 text-slate-500 text-xs">{row.date}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

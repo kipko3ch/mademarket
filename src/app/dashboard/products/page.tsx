@@ -15,7 +15,17 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Edit2, Package, PlusCircle, ImageIcon, Link2 } from "lucide-react";
+import { Plus, Edit2, Package, PlusCircle, ImageIcon, Link2, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -101,6 +111,10 @@ export default function DashboardProductsPage() {
     imageUrl: "",
   });
   const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // Delete listing state
+  const [deleteTarget, setDeleteTarget] = useState<StoreProduct | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Link search state (for changing/linking product in edit dialog)
   const [linkSearchOpen, setLinkSearchOpen] = useState(false);
@@ -1000,11 +1014,64 @@ export default function DashboardProductsPage() {
                   <Edit2 className="h-3 w-3 mr-1.5" />
                   Edit Product
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2 rounded-xl text-xs text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={() => setDeleteTarget(p)}
+                >
+                  <Trash2 className="h-3 w-3 mr-1.5" />
+                  Remove Listing
+                </Button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Listing</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove <strong>{deleteTarget?.productName}</strong> from your branch. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700"
+              onClick={async () => {
+                if (!deleteTarget || !selectedBranchId) return;
+                setDeleting(true);
+                try {
+                  const res = await fetch(`/api/stores/${selectedBranchId}/products`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ storeProductId: deleteTarget.id }),
+                  });
+                  if (res.ok) {
+                    setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+                    toast.success("Listing removed");
+                    setDeleteTarget(null);
+                  } else {
+                    const err = await res.json();
+                    toast.error(err.error || "Failed to remove listing");
+                  }
+                } catch {
+                  toast.error("Failed to remove listing");
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+            >
+              {deleting ? "Removing…" : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

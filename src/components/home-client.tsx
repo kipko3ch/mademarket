@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
-import { ChevronRight, Store, ArrowRight, Diamond, TrendingUp, Package } from "lucide-react";
+import { ChevronRight, Store, ArrowRight, Diamond, TrendingUp, Package, ShoppingBag, MessageCircle, ExternalLink, Tag } from "lucide-react";
 import { ProductCard } from "@/components/products/product-card";
 import { LocationModal } from "@/components/location-modal";
 import { BrochuresSection } from "@/components/brochures-section";
@@ -68,6 +68,19 @@ interface BundleData {
   branchId: string | null;
 }
 
+interface StandaloneListing {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  categoryName: string | null;
+  price: string | null;
+  checkoutType: "whatsapp" | "external_url";
+  whatsappNumber: string | null;
+  externalUrl: string | null;
+  featured: boolean;
+}
+
 interface HomeClientProps {
   banners: Banner[];
   stores: StoreData[];
@@ -75,6 +88,7 @@ interface HomeClientProps {
   featuredProducts?: FeaturedProductData[];
   popularProducts?: ProductData[];
   bundles?: BundleData[];
+  standaloneListings?: StandaloneListing[];
 }
 
 // ─── Fallback data ──────────────────────────────────────────────────────────
@@ -134,7 +148,7 @@ const VENDOR_COLORS: Record<string, string> = {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export function HomeClient({ banners, stores, products, featuredProducts = [], popularProducts = [], bundles = [] }: HomeClientProps) {
+export function HomeClient({ banners, stores, products, featuredProducts = [], popularProducts = [], bundles = [], standaloneListings = [] }: HomeClientProps) {
   const displayBanners = banners.length > 0 ? banners : FALLBACK_BANNERS;
   const userLocation = useLocation((s) => s.location);
   const hasRealStores = stores.length > 0;
@@ -325,6 +339,57 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
         ═══════════════════════════════════════════════════════════ */}
         {bundles.length > 0 && (
           <BundleCarousel bundles={bundles} />
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════
+            § 4.8  MARKETPLACE — Standalone listings
+        ═══════════════════════════════════════════════════════════ */}
+        {standaloneListings.length > 0 && (
+          <section className="mb-8 sm:mb-12">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-heading font-bold text-slate-900">Marketplace</h2>
+                <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Cars, houses, and more for sale</p>
+              </div>
+              <Link href="/listing" className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline">
+                See all <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {standaloneListings.map((listing) => (
+                <Link key={listing.id} href={`/listing/${listing.slug}`} className="group bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-md transition-all">
+                  <div className="h-48 bg-slate-100 flex items-center justify-center">
+                    <ShoppingBag className="h-12 w-12 text-slate-300" />
+                  </div>
+                  <div className="p-4">
+                    {listing.categoryName && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mb-2">
+                        <Tag className="h-2.5 w-2.5" />
+                        {listing.categoryName}
+                      </span>
+                    )}
+                    <h3 className="font-semibold text-slate-900 text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2">
+                      {listing.title}
+                    </h3>
+                    {listing.price && (
+                      <p className="text-primary font-bold text-base mt-1">N$ {Number(listing.price).toFixed(2)}</p>
+                    )}
+                    <div className="mt-3">
+                      {listing.checkoutType === "whatsapp" ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2.5 py-1 rounded-full font-semibold">
+                          <MessageCircle className="h-3 w-3" /> WhatsApp
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full font-semibold">
+                          <ExternalLink className="h-3 w-3" /> View Link
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
         )}
 
         {/* ═══════════════════════════════════════════════════════════

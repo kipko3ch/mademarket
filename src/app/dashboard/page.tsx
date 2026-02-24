@@ -179,7 +179,7 @@ export default function DashboardPage() {
             <span className="text-base font-semibold text-white/90">
               Listed Products
             </span>
-            <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 border bg-white/10 border-white/20 text-white">
+            <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 border bg-blue-500 border-blue-400 text-white">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7" /><path d="M7 7h10v10" /></svg>
             </div>
           </div>
@@ -188,7 +188,7 @@ export default function DashboardPage() {
               {totalProducts}
             </div>
             <div className="text-xs flex items-center gap-1.5 text-blue-100">
-              <div className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/20 text-white">
+              <div className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
                 All Branches
               </div>
               Total products

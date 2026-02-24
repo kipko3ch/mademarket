@@ -14,6 +14,7 @@ import {
   Settings,
   ExternalLink,
   Shield,
+  ShoppingBag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ const adminLinks = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/banners", label: "Hero Banners", icon: ImagePlay },
   { href: "/admin/featured", label: "Featured", icon: Diamond },
+  { href: "/admin/standalone", label: "Marketplace", icon: ShoppingBag },
   { href: "/admin/stores", label: "Manage Vendors", icon: Store },
   { href: "/admin/categories", label: "Categories", icon: Tags },
   { href: "/admin/sponsored", label: "Sponsored", icon: Megaphone },
@@ -45,7 +47,7 @@ export function AdminSidebar() {
             Menu
           </p>
           <nav className="space-y-1.5">
-            {adminLinks.slice(0, 6).map((link) => {
+            {adminLinks.slice(0, 7).map((link) => {
               const Icon = link.icon;
               const isActive = link.href === "/admin"
                 ? pathname === "/admin"
@@ -76,7 +78,7 @@ export function AdminSidebar() {
             General
           </p>
           <nav className="space-y-1.5">
-            {adminLinks.slice(6).map((link) => {
+            {adminLinks.slice(7).map((link) => {
               const Icon = link.icon;
               const isActive = link.href === "/admin"
                 ? pathname === "/admin"

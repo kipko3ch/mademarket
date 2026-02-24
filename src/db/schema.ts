@@ -140,6 +140,8 @@ export const categories = pgTable("categories", {
   name: text("name").notNull().unique(),
   slug: text("slug").notNull().unique(),
   imageUrl: text("image_url"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -568,5 +570,61 @@ export const brochuresRelations = relations(brochures, ({ one }) => ({
   creator: one(users, {
     fields: [brochures.createdBy],
     references: [users.id],
+  }),
+}));
+
+// ─── Standalone Listings (Admin-created marketplace items) ────────────────────
+
+export const standaloneListings = pgTable(
+  "standalone_listings",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    title: text("title").notNull(),
+    slug: text("slug").notNull(),
+    description: text("description"),
+    categoryId: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
+    price: decimal("price", { precision: 10, scale: 2 }),
+    checkoutType: text("checkout_type", { enum: ["whatsapp", "external_url"] }).notNull().default("external_url"),
+    whatsappNumber: text("whatsapp_number"),
+    externalUrl: text("external_url"),
+    featured: boolean("featured").notNull().default(false),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_standalone_listings_slug").on(table.slug),
+    index("idx_standalone_listings_active").on(table.active),
+    index("idx_standalone_listings_featured").on(table.featured),
+  ]
+);
+
+export const standaloneListingImages = pgTable(
+  "standalone_listing_images",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    listingId: uuid("listing_id")
+      .notNull()
+      .references(() => standaloneListings.id, { onDelete: "cascade" }),
+    imageUrl: text("image_url").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_standalone_listing_images_listing").on(table.listingId),
+  ]
+);
+
+export const standaloneListingsRelations = relations(standaloneListings, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [standaloneListings.categoryId],
+    references: [categories.id],
+  }),
+  images: many(standaloneListingImages),
+}));
+
+export const standaloneListingImagesRelations = relations(standaloneListingImages, ({ one }) => ({
+  listing: one(standaloneListings, {
+    fields: [standaloneListingImages.listingId],
+    references: [standaloneListings.id],
   }),
 }));

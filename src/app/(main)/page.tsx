@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { heroBanners, vendors, branches, stores, products, storeProducts, categories, featuredProducts, productClicks, bundles, searchLogs } from "@/db/schema";
+import { heroBanners, vendors, branches, stores, products, storeProducts, categories, featuredProducts, productClicks, bundles, searchLogs, standaloneListings } from "@/db/schema";
 import { eq, sql, asc, desc, and, gte, isNotNull } from "drizzle-orm";
 import { HomeClient } from "@/components/home-client";
 
@@ -11,7 +11,7 @@ export default async function HomePage() {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   // Parallel server-side data fetching — all at once, zero waterfall
-  const [banners, marqueeBranches, productRows, featuredRows, popularRows, bundleRows] = await Promise.all([
+  const [banners, marqueeBranches, productRows, featuredRows, popularRows, bundleRows, listingRows] = await Promise.all([
     // 1. Hero banners
     db
       .select()
@@ -188,6 +188,27 @@ export default async function HomePage() {
       .orderBy(desc(bundles.createdAt))
       .limit(8)
       .catch(() => []),
+
+    // 7. Featured standalone listings
+    db
+      .select({
+        id: standaloneListings.id,
+        title: standaloneListings.title,
+        slug: standaloneListings.slug,
+        description: standaloneListings.description,
+        categoryName: categories.name,
+        price: standaloneListings.price,
+        checkoutType: standaloneListings.checkoutType,
+        whatsappNumber: standaloneListings.whatsappNumber,
+        externalUrl: standaloneListings.externalUrl,
+        featured: standaloneListings.featured,
+      })
+      .from(standaloneListings)
+      .leftJoin(categories, eq(standaloneListings.categoryId, categories.id))
+      .where(and(eq(standaloneListings.active, true), eq(standaloneListings.featured, true)))
+      .orderBy(desc(standaloneListings.createdAt))
+      .limit(6)
+      .catch(() => []),
   ]);
 
   // Fallback: if no marquee branches configured, show all approved active branches with products
@@ -230,6 +251,7 @@ export default async function HomePage() {
       featuredProducts={featuredRows}
       popularProducts={popularRows}
       bundles={bundleRows}
+      standaloneListings={listingRows}
     />
   );
 }
