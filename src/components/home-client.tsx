@@ -614,6 +614,7 @@ function BundleCard({ bundle }: { bundle: BundleData }) {
           <img
             src={bundle.imageUrl}
             alt={bundle.name}
+            loading="eager"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
@@ -632,7 +633,7 @@ function BundleCard({ bundle }: { bundle: BundleData }) {
         <div className="flex items-center gap-2 mb-2">
           {bundle.vendorLogoUrl ? (
             <div className="h-5 w-5 rounded overflow-hidden bg-white border border-slate-100">
-              <img src={bundle.vendorLogoUrl} alt="" className="h-full w-full object-contain" />
+              <img src={bundle.vendorLogoUrl} alt="" loading="eager" className="h-full w-full object-contain" />
             </div>
           ) : null}
           <span className="text-[10px] sm:text-xs text-slate-400 font-medium">{bundle.vendorName}</span>
