@@ -69,7 +69,7 @@ export function ProductCard({
             <img
               src={imageUrl}
               alt={name}
-              className="w-full h-full object-contain p-4 sm:p-6 group-hover:scale-110 transition-transform duration-700"
+              className="w-full h-full object-contain p-2 sm:p-3 group-hover:scale-110 transition-transform duration-700"
               loading="lazy"
             />
           ) : (
@@ -109,7 +109,7 @@ export function ProductCard({
 
         {/* Cart Button - Overlapping the bottom-right corner */}
         <button
-          className="absolute -bottom-2 -right-1 h-9 w-9 sm:h-11 sm:w-11 flex items-center justify-center bg-primary text-white border-2 border-white hover:bg-primary/90 rounded-2xl transition-all group/cart shadow-xl active:scale-95 z-20"
+          className="absolute -bottom-2 -right-1 h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center bg-primary text-white border-2 border-white hover:bg-primary/90 rounded-2xl transition-all group/cart shadow-xl active:scale-95 z-20"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -131,13 +131,13 @@ export function ProductCard({
       <div className="px-1.5 pr-8 space-y-1.5">
         <div>
           <Link href={productUrl(id, name)}>
-            <h4 className="font-bold text-sm sm:text-base text-slate-900 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
               {name}
             </h4>
           </Link>
           <div className="flex items-center gap-1.5 mt-1">
             {storeCount > 0 && (
-              <span className="text-[10px] sm:text-xs font-bold text-primary/60 uppercase tracking-tight">
+              <span className="text-[9px] sm:text-[10px] font-bold text-primary/60 uppercase tracking-tight">
                 {storeCount} {storeCount === 1 ? "store" : "stores"}
               </span>
             )}
@@ -150,13 +150,13 @@ export function ProductCard({
           </div>
         </div>
 
-        <div className="flex flex-col pt-1">
+        <div className="flex flex-col pt-0.5">
           {minPrice ? (
             <>
-              <span className="text-xl sm:text-2xl font-black text-primary tracking-tighter">
+              <span className="text-lg sm:text-xl font-black text-primary tracking-tighter">
                 {formatCurrency(minPrice)}
               </span>
-              <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wide -mt-0.5">
+              <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wide -mt-0.5">
                 {storeCount > 1 ? "Minimum Price" : "Current Best Deal"}
               </span>
             </>

@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
   const minPrice = url.get("minPrice") || "";
   const maxPrice = url.get("maxPrice") || "";
   const sortBy = url.get("sortBy") || "name"; // name | price_asc | price_desc
+  const all = url.get("all") === "true"; // If true, search all products (even those without prices)
   const offset = (page - 1) * pageSize;
 
   try {
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
       db.insert(searchLogs)
         .values({ query: search, userId: session?.user?.id || null })
         .execute()
-        .catch(() => {}); // fire and forget
+        .catch(() => { }); // fire and forget
     }
 
     // Build conditions — search with enhanced normalization
@@ -50,75 +51,89 @@ export async function GET(req: NextRequest) {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // Get total count — only products with at least one active seller
+    // Get total count
     const countConditions = whereClause ? [whereClause] : [];
-    const [countResult] = await db
-      .select({ count: sql<number>`count(distinct ${products.id})` })
-      .from(products)
-      .innerJoin(storeProducts, and(
-        eq(products.id, storeProducts.productId),
-        isNotNull(storeProducts.branchId)
-      ))
-      .innerJoin(branches, and(
-        eq(storeProducts.branchId, branches.id),
-        eq(branches.approved, true),
-        eq(branches.active, true)
-      ))
-      .innerJoin(vendors, and(
-        eq(branches.vendorId, vendors.id),
-        eq(vendors.approved, true),
-        eq(vendors.active, true)
-      ))
-      .where(countConditions.length > 0 ? and(...countConditions) : undefined);
+    let queryCount;
 
-    const total = Number(countResult.count);
-
-    // Get sponsored products for the current results
-    const now = new Date();
-    const sponsoredResults = await db
-      .select({
-        productId: sponsoredListings.productId,
-        priorityLevel: sponsoredListings.priorityLevel,
-        vendorName: vendors.name,
-        vendorId: vendors.id,
-        vendorSlug: vendors.slug,
-        vendorLogoUrl: vendors.logoUrl,
-        price: storeProducts.price,
-        productName: products.name,
-        productImage: products.imageUrl,
-        categoryName: categories.name,
-      })
-      .from(sponsoredListings)
-      .innerJoin(products, eq(sponsoredListings.productId, products.id))
-      .innerJoin(vendors, and(
-        eq(sponsoredListings.vendorId, vendors.id),
-        eq(vendors.approved, true),
-        eq(vendors.active, true)
-      ))
-      .innerJoin(branches, and(
-        eq(branches.vendorId, vendors.id),
-        eq(branches.approved, true),
-        eq(branches.active, true)
-      ))
-      .innerJoin(
-        storeProducts,
-        and(
-          eq(storeProducts.branchId, branches.id),
-          eq(storeProducts.productId, sponsoredListings.productId),
+    if (all) {
+      // For dashboard search — all products in catalog
+      [queryCount] = await db
+        .select({ count: sql<number>`count(${products.id})` })
+        .from(products)
+        .where(countConditions.length > 0 ? and(...countConditions) : undefined);
+    } else {
+      // For storefront — only products with at least one active seller
+      [queryCount] = await db
+        .select({ count: sql<number>`count(distinct ${products.id})` })
+        .from(products)
+        .innerJoin(storeProducts, and(
+          eq(products.id, storeProducts.productId),
           isNotNull(storeProducts.branchId)
+        ))
+        .innerJoin(branches, and(
+          eq(storeProducts.branchId, branches.id),
+          eq(branches.approved, true),
+          eq(branches.active, true)
+        ))
+        .innerJoin(vendors, and(
+          eq(branches.vendorId, vendors.id),
+          eq(vendors.approved, true),
+          eq(vendors.active, true)
+        ))
+        .where(countConditions.length > 0 ? and(...countConditions) : undefined);
+    }
+
+    const total = Number(queryCount.count);
+
+    // Get sponsored products (only for storefront)
+    let sponsoredResults: any[] = [];
+    if (!all) {
+      const now = new Date();
+      sponsoredResults = await db
+        .select({
+          productId: sponsoredListings.productId,
+          priorityLevel: sponsoredListings.priorityLevel,
+          vendorName: vendors.name,
+          vendorId: vendors.id,
+          vendorSlug: vendors.slug,
+          vendorLogoUrl: vendors.logoUrl,
+          price: storeProducts.price,
+          productName: products.name,
+          productImage: products.imageUrl,
+          categoryName: categories.name,
+        })
+        .from(sponsoredListings)
+        .innerJoin(products, eq(sponsoredListings.productId, products.id))
+        .innerJoin(vendors, and(
+          eq(sponsoredListings.vendorId, vendors.id),
+          eq(vendors.approved, true),
+          eq(vendors.active, true)
+        ))
+        .innerJoin(branches, and(
+          eq(branches.vendorId, vendors.id),
+          eq(branches.approved, true),
+          eq(branches.active, true)
+        ))
+        .innerJoin(
+          storeProducts,
+          and(
+            eq(storeProducts.branchId, branches.id),
+            eq(storeProducts.productId, sponsoredListings.productId),
+            isNotNull(storeProducts.branchId)
+          )
         )
-      )
-      .leftJoin(categories, eq(products.categoryId, categories.id))
-      .where(
-        and(
-          eq(sponsoredListings.approved, true),
-          eq(sponsoredListings.active, true),
-          lte(sponsoredListings.startDate, now),
-          gte(sponsoredListings.endDate, now)
+        .leftJoin(categories, eq(products.categoryId, categories.id))
+        .where(
+          and(
+            eq(sponsoredListings.approved, true),
+            eq(sponsoredListings.active, true),
+            lte(sponsoredListings.startDate, now),
+            gte(sponsoredListings.endDate, now)
+          )
         )
-      )
-      .orderBy(desc(sponsoredListings.priorityLevel))
-      .limit(3);
+        .orderBy(desc(sponsoredListings.priorityLevel))
+        .limit(3);
+    }
 
     // Build join condition for store_products → branches → vendors
     const branchJoinConditions = [
@@ -129,7 +144,7 @@ export async function GET(req: NextRequest) {
       branchJoinConditions.push(eq(storeProducts.branchId, branchId));
     }
 
-    // Main query: products with min price across approved+active branches/vendors only
+    // Main query
     const selectFields = {
       id: products.id,
       name: products.name,
@@ -138,9 +153,9 @@ export async function GET(req: NextRequest) {
       unit: products.unit,
       categoryId: products.categoryId,
       categoryName: categories.name,
-      minPrice: sql<number>`min(${storeProducts.price})`.as("min_price"),
-      maxPrice: sql<number>`max(${storeProducts.price})`.as("max_price"),
-      storeCount: sql<number>`count(distinct ${storeProducts.branchId})`.as("store_count"),
+      minPrice: all ? sql<number | null>`null`.as("min_price") : sql<number>`min(${storeProducts.price})`.as("min_price"),
+      maxPrice: all ? sql<number | null>`null`.as("max_price") : sql<number>`max(${storeProducts.price})`.as("max_price"),
+      storeCount: all ? sql<number>`0`.as("store_count") : sql<number>`count(distinct ${storeProducts.branchId})`.as("store_count"),
     };
 
     const groupByFields = [products.id, products.name, products.normalizedName, products.imageUrl, products.unit, products.categoryId, categories.name] as const;
@@ -152,25 +167,39 @@ export async function GET(req: NextRequest) {
     }
     const fullWhere = fullWhereConditions.length > 0 ? and(...fullWhereConditions) : undefined;
 
-    const productResults = await db
-      .select(selectFields)
-      .from(products)
-      .innerJoin(storeProducts, and(...branchJoinConditions))
-      .leftJoin(categories, eq(products.categoryId, categories.id))
-      .innerJoin(branches, and(
-        eq(storeProducts.branchId, branches.id),
-        eq(branches.approved, true),
-        eq(branches.active, true)
-      ))
-      .innerJoin(vendors, and(
-        eq(branches.vendorId, vendors.id),
-        eq(vendors.approved, true),
-        eq(vendors.active, true)
-      ))
-      .where(fullWhere)
-      .groupBy(...groupByFields)
-      .limit(pageSize)
-      .offset(offset);
+    let productResults;
+    if (all) {
+      // CATALOG MODE: Just the products, no price joins needed
+      productResults = await db
+        .select(selectFields)
+        .from(products)
+        .leftJoin(categories, eq(products.categoryId, categories.id))
+        .where(fullWhere)
+        .limit(pageSize)
+        .offset(offset)
+        .orderBy(asc(products.name));
+    } else {
+      // MARKETPLACE MODE: Prices and active sellers only
+      productResults = await db
+        .select(selectFields)
+        .from(products)
+        .innerJoin(storeProducts, and(...branchJoinConditions))
+        .leftJoin(categories, eq(products.categoryId, categories.id))
+        .innerJoin(branches, and(
+          eq(storeProducts.branchId, branches.id),
+          eq(branches.approved, true),
+          eq(branches.active, true)
+        ))
+        .innerJoin(vendors, and(
+          eq(branches.vendorId, vendors.id),
+          eq(vendors.approved, true),
+          eq(vendors.active, true)
+        ))
+        .where(fullWhere)
+        .groupBy(...groupByFields)
+        .limit(pageSize)
+        .offset(offset);
+    }
 
     // Filter by price range if specified
     let filtered = productResults;

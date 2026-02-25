@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { ChevronRight, Store, ArrowRight, Diamond, TrendingUp, Package, ShoppingBag, MessageCircle, ExternalLink, Tag } from "lucide-react";
 import { ProductCard } from "@/components/products/product-card";
+import { BundleCard, type BundleData } from "@/components/products/bundle-card";
 import { LocationModal } from "@/components/location-modal";
 import { BrochuresSection } from "@/components/brochures-section";
+import { Badge } from "@/components/ui/badge";
 import { useLocation, getRegionForCity } from "@/hooks/use-location";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
@@ -53,20 +55,7 @@ interface FeaturedProductData extends ProductData {
   priority: "premium" | "standard";
 }
 
-interface BundleData {
-  id: string;
-  name: string;
-  slug: string | null;
-  description: string | null;
-  imageUrl: string | null;
-  price: string;
-  externalUrl: string | null;
-  items: string | null;
-  vendorName: string;
-  vendorLogoUrl: string | null;
-  vendorSlug: string;
-  branchId: string | null;
-}
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 interface StandaloneListing {
   id: string;
@@ -229,7 +218,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
                 <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
               {displayFeatured.map((p) => (
                 <div key={p.id} className="relative">
                   {"priority" in p && (p as FeaturedProductData).priority === "premium" && (
@@ -262,7 +251,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
             </div>
             <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-2 snap-x snap-mandatory scrollbar-hide">
               {recentlyViewed.map((p) => (
-                <div key={p.id} className="w-[200px] sm:w-[240px] shrink-0 snap-start">
+                <div key={p.id} className="w-[150px] sm:w-[180px] shrink-0 snap-start">
                   <ProductCard {...p} storeCount={Number(p.storeCount)} />
                 </div>
               ))}
@@ -290,7 +279,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
             </div>
             <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 snap-x snap-mandatory scrollbar-hide">
               {dealProducts.map((p) => (
-                <div key={p.id} className="w-[220px] sm:w-[260px] shrink-0 snap-start">
+                <div key={p.id} className="w-[170px] sm:w-[200px] shrink-0 snap-start">
                   <ProductCard {...p} storeCount={Number(p.storeCount)} />
                 </div>
               ))}
@@ -326,7 +315,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
             </div>
             <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-3 snap-x snap-mandatory scrollbar-hide">
               {popularProducts.map((p) => (
-                <div key={p.id} className="w-[180px] sm:w-[220px] md:w-[240px] shrink-0 snap-start">
+                <div key={p.id} className="w-[140px] sm:w-[170px] md:w-[190px] shrink-0 snap-start">
                   <ProductCard {...p} storeCount={Number(p.storeCount)} />
                 </div>
               ))}
@@ -618,75 +607,7 @@ function BundleCarousel({ bundles }: { bundles: BundleData[] }) {
   );
 }
 
-// ─── Bundle Card ─────────────────────────────────────────────────────────────
 
-function BundleCard({ bundle }: { bundle: BundleData }) {
-  const itemsList = bundle.items ? bundle.items.split(",").map((s) => s.trim()).filter(Boolean) : [];
-
-  const href = bundle.slug && bundle.vendorSlug
-    ? `/store/${bundle.vendorSlug}/bundle/${bundle.slug}`
-    : bundle.externalUrl || "#";
-  const isExternal = !bundle.slug && bundle.externalUrl;
-
-  return (
-    <Link
-      href={href}
-      target={isExternal ? "_blank" : undefined}
-      rel={isExternal ? "noopener noreferrer" : undefined}
-      className="w-full bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-lg hover:border-primary/20 transition-all group cursor-pointer"
-    >
-      {/* Bundle Image */}
-      <div className="relative h-36 sm:h-44 bg-slate-50 overflow-hidden">
-        {bundle.imageUrl ? (
-          <img
-            src={bundle.imageUrl}
-            alt={bundle.name}
-            loading="eager"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-50 to-slate-50">
-            <Package className="h-10 w-10 text-violet-300" />
-          </div>
-        )}
-        {/* Price badge */}
-        <div className="absolute top-3 right-3 bg-primary text-white text-xs sm:text-sm font-bold px-3 py-1 rounded-full shadow-lg">
-          {formatCurrency(Number(bundle.price))}
-        </div>
-      </div>
-
-      {/* Bundle Info */}
-      <div className="p-3 sm:p-4">
-        <div className="flex items-center gap-2 mb-2">
-          {bundle.vendorLogoUrl ? (
-            <div className="h-5 w-5 rounded overflow-hidden bg-white border border-slate-100">
-              <img src={bundle.vendorLogoUrl} alt="" loading="eager" className="h-full w-full object-contain" />
-            </div>
-          ) : null}
-          <span className="text-[10px] sm:text-xs text-slate-400 font-medium">{bundle.vendorName}</span>
-        </div>
-        <h4 className="font-bold text-sm sm:text-base text-slate-900 mb-1.5 line-clamp-1">{bundle.name}</h4>
-        {bundle.description && (
-          <p className="text-[10px] sm:text-xs text-slate-500 mb-2 line-clamp-2">{bundle.description}</p>
-        )}
-        {itemsList.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {itemsList.slice(0, 4).map((item, i) => (
-              <span key={i} className="text-[9px] sm:text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-                {item}
-              </span>
-            ))}
-            {itemsList.length > 4 && (
-              <span className="text-[9px] sm:text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full">
-                +{itemsList.length - 4} more
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-    </Link>
-  );
-}
 
 // ─── Retailer Marquee ───────────────────────────────────────────────────────
 
@@ -702,13 +623,13 @@ function RetailerMarquee({ stores, hasRealStores }: { stores: StoreData[]; hasRe
   const scrollDuration = `${unique.length * 4}s`;
 
   return (
-    <div className="relative py-4 sm:py-6 bg-white overflow-hidden group/marquee">
+    <div className="relative py-8 sm:py-12 bg-white overflow-hidden group/marquee">
       {/* Soft gradient fades on both sides for a smoother look */}
       <div className="absolute inset-y-0 left-0 w-16 sm:w-32 bg-gradient-to-r from-white via-white/80 to-transparent z-10 pointer-events-none" />
       <div className="absolute inset-y-0 right-0 w-16 sm:w-32 bg-gradient-to-l from-white via-white/80 to-transparent z-10 pointer-events-none" />
 
       <div
-        className="flex w-fit animate-scroll items-center gap-8 sm:gap-16 md:gap-20 px-6 sm:px-12 hover:[animation-play-state:paused] will-change-transform"
+        className="flex w-fit animate-scroll items-center gap-12 sm:gap-20 md:gap-28 px-6 sm:px-12 hover:[animation-play-state:paused] will-change-transform"
         style={{ "--scroll-offset": scrollPercent, "--scroll-duration": scrollDuration } as React.CSSProperties}
       >
         {doubled.map((s, i) => {
@@ -719,9 +640,9 @@ function RetailerMarquee({ stores, hasRealStores }: { stores: StoreData[]; hasRe
             <Link
               key={`${s.vendorSlug}-${i}`}
               href={href}
-              className="flex-shrink-0 flex flex-col items-center gap-2.5 group transition-all duration-300 cursor-pointer"
+              className="flex-shrink-0 flex flex-col items-center gap-4 group transition-all duration-300 cursor-pointer"
             >
-              <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+              <div className="w-20 h-20 sm:w-32 sm:h-32 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
                 {s.vendorLogoUrl ? (
                   <img
                     src={s.vendorLogoUrl}
@@ -729,12 +650,12 @@ function RetailerMarquee({ stores, hasRealStores }: { stores: StoreData[]; hasRe
                     className="max-h-full max-w-full object-contain transition-all duration-500"
                   />
                 ) : (
-                  <div className={`w-full h-full ${colorClass} rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-xl`}>
+                  <div className={`w-full h-full ${colorClass} rounded-2xl flex items-center justify-center text-white font-bold text-xl sm:text-3xl`}>
                     {s.vendorName.charAt(0)}
                   </div>
                 )}
               </div>
-              <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-primary transition-colors">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-[0.2em] group-hover:text-primary transition-colors">
                 {s.vendorName}
               </span>
             </Link>

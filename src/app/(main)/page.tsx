@@ -165,28 +165,49 @@ export default async function HomePage() {
       .limit(10)
       .catch(() => []),
 
-    // 6. Active bundles — join branches → vendors instead of stores
-    db
-      .select({
-        id: bundles.id,
-        name: bundles.name,
-        slug: bundles.slug,
-        description: bundles.description,
-        imageUrl: bundles.imageUrl,
-        price: bundles.price,
-        externalUrl: bundles.externalUrl,
-        items: bundles.items,
-        branchId: bundles.branchId,
-        vendorName: vendors.name,
-        vendorLogoUrl: vendors.logoUrl,
-        vendorSlug: vendors.slug,
+    // 6. Active bundles with images and products
+    db.query.bundles
+      .findMany({
+        where: eq(bundles.active, true),
+        with: {
+          branch: {
+            with: {
+              vendor: true,
+            },
+          },
+          bundleImages: {
+            limit: 4,
+          },
+          bundleProducts: {
+            with: {
+              product: true,
+            },
+            limit: 4,
+          },
+        },
+        orderBy: [desc(bundles.createdAt)],
+        limit: 8,
       })
-      .from(bundles)
-      .innerJoin(branches, eq(bundles.branchId, branches.id))
-      .innerJoin(vendors, eq(branches.vendorId, vendors.id))
-      .where(eq(bundles.active, true))
-      .orderBy(desc(bundles.createdAt))
-      .limit(8)
+      .then((rows) =>
+        rows.map((b) => ({
+          id: b.id,
+          name: b.name,
+          slug: b.slug,
+          description: b.description,
+          imageUrl: b.imageUrl,
+          price: b.price,
+          externalUrl: b.externalUrl,
+          items: b.items,
+          branchId: b.branchId,
+          vendorName: b.branch?.vendor.name || "Store",
+          vendorLogoUrl: b.branch?.vendor.logoUrl || null,
+          vendorSlug: b.branch?.vendor.slug || "",
+          bundleImages: b.bundleImages.map((bi) => bi.imageUrl),
+          productImages: b.bundleProducts
+            .map((bp) => bp.product.imageUrl)
+            .filter(Boolean) as string[],
+        }))
+      )
       .catch(() => []),
 
     // 7. Featured standalone listings

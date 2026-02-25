@@ -3,8 +3,9 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { Search, LogOut, LayoutDashboard, Shield, Heart, Menu, X, User, ChevronDown, ShoppingBag, Bell, Settings, Store } from "lucide-react";
+import { Search, LogOut, LayoutDashboard, Shield, Heart, Menu, X, User, ChevronDown, ShoppingBag, Bell, Settings, Store, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/currency";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -32,6 +33,9 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -42,12 +46,52 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Scroll lock effect
+  useEffect(() => {
+    if (showResults && searchQuery.length >= 2) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [showResults, searchQuery]);
+
+  // Live search effect
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(`/api/products?search=${encodeURIComponent(searchQuery)}&pageSize=6`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data.data || []);
+          setShowResults(true);
+        }
+      } catch (err) {
+        console.error("Search error", err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setMobileMenuOpen(false);
       setMobileSearchOpen(false);
+      setShowResults(false);
     }
   }
 
@@ -58,7 +102,7 @@ export function Header() {
         ? "bg-white/90 backdrop-blur-md border-b border-primary/10 shadow-sm"
         : "bg-transparent md:bg-background border-b-0 shadow-none"
     )}>
-      <div className="flex h-14 items-center justify-between gap-2 px-4 md:px-8 mx-auto w-full max-w-[1440px] relative overflow-x-hidden">
+      <div className="flex h-14 items-center justify-between gap-2 px-4 md:px-8 mx-auto w-full max-w-[1440px] relative">
         {/* Mobile Search Overlay */}
         <div className={cn(
           "absolute inset-0 bg-background md:hidden items-center px-4 transition-all duration-300 z-[70] flex",
@@ -67,7 +111,10 @@ export function Header() {
           <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setMobileSearchOpen(false)}
+              onClick={() => {
+                setMobileSearchOpen(false);
+                setShowResults(false);
+              }}
               className="p-2 -ml-2 text-slate-400 hover:text-primary transition-colors"
             >
               <X className="h-5 w-5" />
@@ -79,8 +126,56 @@ export function Header() {
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setShowResults(true)}
                 className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-full text-sm focus:ring-2 focus:ring-primary outline-none"
               />
+
+              {/* Mobile Results Popover - Fixed Overlay */}
+              {showResults && searchQuery.length >= 2 && (
+                <div className="fixed top-14 left-0 right-0 bottom-14 bg-white z-[80] scrollbar-hide overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {isSearching ? (
+                    <div className="p-8 text-center">
+                      <Loader2 className="h-6 w-6 text-primary animate-spin mx-auto mb-2" />
+                      <p className="text-xs text-slate-400 font-medium">Hunting for deals...</p>
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    <div className="p-2">
+                      {searchResults.map((p) => (
+                        <Link
+                          key={p.id}
+                          href={`/product/${p.id}`}
+                          onClick={() => {
+                            setMobileSearchOpen(false);
+                            setShowResults(false);
+                          }}
+                          className="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors group"
+                        >
+                          <div className="h-12 w-12 rounded-lg bg-white border border-slate-100 p-1 flex items-center justify-center shrink-0">
+                            <img src={p.imageUrl} alt="" className="h-full w-full object-contain" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-slate-900 truncate group-hover:text-primary transition-colors">{p.name}</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">From {formatCurrency(p.minPrice)}</p>
+                          </div>
+                          <ChevronDown className="h-4 w-4 text-slate-300 -rotate-90" />
+                        </Link>
+                      ))}
+                      <button
+                        onClick={handleSearch}
+                        className="w-full p-3 text-center text-xs font-black text-primary hover:bg-primary/5 rounded-xl transition-colors uppercase tracking-widest mt-1 border-t border-slate-50"
+                      >
+                        View all results for &quot;{searchQuery}&quot;
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-10 text-center">
+                      <ShoppingBag className="h-8 w-8 text-slate-200 mx-auto mb-3" />
+                      <p className="text-sm font-bold text-slate-900">No matches found</p>
+                      <p className="text-xs text-slate-400 mt-1">Try searching for a category or brand</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </form>
         </div>
@@ -109,23 +204,73 @@ export function Header() {
         </nav>
 
         {/* Desktop Search */}
-        <form
-          onSubmit={handleSearch}
+        <div
           className={cn(
-            "flex-1 hidden md:block transition-all duration-500 ease-in-out origin-center",
+            "flex-1 hidden md:block transition-all duration-500 ease-in-out origin-center relative z-40",
             scrolled ? "max-w-xl" : "max-w-md"
           )}
         >
-          <div className="relative group">
+          <form onSubmit={handleSearch} className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
             <input
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setShowResults(true)}
               className="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-sm focus:ring-2 focus:ring-primary focus:border-transparent focus:bg-white transition-all outline-none"
             />
-          </div>
-        </form>
+          </form>
+
+          {/* Desktop Live Results */}
+          {showResults && searchQuery.length >= 2 && (
+            <div
+              className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] border border-slate-100 scrollbar-hide animate-in fade-in slide-in-from-top-2 duration-300"
+              onMouseLeave={() => setShowResults(false)}
+            >
+              {isSearching ? (
+                <div className="p-8 text-center">
+                  <Loader2 className="h-6 w-6 text-primary animate-spin mx-auto mb-2" />
+                  <p className="text-xs text-slate-400 font-medium">Searching MaDe Market...</p>
+                </div>
+              ) : searchResults.length > 0 ? (
+                <div className="p-1.5">
+                  <div className="px-3 py-2">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Top Suggestions</p>
+                  </div>
+                  {searchResults.map((p) => (
+                    <Link
+                      key={p.id}
+                      href={`/product/${p.id}`}
+                      onClick={() => setShowResults(false)}
+                      className="flex items-center gap-3 p-2.5 hover:bg-slate-50 rounded-xl transition-colors group"
+                    >
+                      <div className="h-10 w-10 rounded-lg bg-white border border-slate-100 p-1 flex items-center justify-center shrink-0">
+                        <img src={p.imageUrl} alt="" className="h-full w-full object-contain" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-900 truncate group-hover:text-primary transition-colors">{p.name}</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">Best Price: {formatCurrency(p.minPrice)}</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-slate-300 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                    </Link>
+                  ))}
+                  <button
+                    onClick={handleSearch}
+                    className="w-full p-3 text-center text-[11px] font-black text-primary hover:bg-primary/5 rounded-xl transition-colors uppercase tracking-[0.2em] mt-1 border-t border-slate-50"
+                  >
+                    Search all for &quot;{searchQuery}&quot;
+                  </button>
+                </div>
+              ) : (
+                <div className="p-10 text-center">
+                  <ShoppingBag className="h-8 w-8 text-slate-200 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-slate-900">No results found</p>
+                  <p className="text-xs text-slate-400 mt-1">Check your spelling or try broader terms</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Right side actions */}
         <div className={cn("flex items-center gap-1 sm:gap-2 transition-opacity", mobileSearchOpen && "opacity-0 invisible md:visible md:opacity-100")}>

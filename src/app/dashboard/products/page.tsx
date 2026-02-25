@@ -135,12 +135,12 @@ export default function DashboardProductsPage() {
 
     setSearching(true);
     try {
-      const res = await fetch(`/api/products?search=${encodeURIComponent(query.trim())}&pageSize=8`);
+      const res = await fetch(`/api/products?search=${encodeURIComponent(query.trim())}&pageSize=8&all=true`);
       if (res.ok) {
         const data = await res.json();
         setSearchResults(data.data || []);
       }
-    } catch {} finally {
+    } catch { } finally {
       setSearching(false);
     }
   }
@@ -224,7 +224,7 @@ export default function DashboardProductsPage() {
 
         const catRes = await fetch("/api/categories");
         if (catRes.ok) setCategories(await catRes.json());
-      } catch {} finally {
+      } catch { } finally {
         setLoading(false);
       }
     }
@@ -373,12 +373,12 @@ export default function DashboardProductsPage() {
     }
     setLinkSearching(true);
     try {
-      const res = await fetch(`/api/products?search=${encodeURIComponent(query.trim())}&pageSize=8`);
+      const res = await fetch(`/api/products?search=${encodeURIComponent(query.trim())}&pageSize=8&all=true`);
       if (res.ok) {
         const data = await res.json();
         setLinkSearchResults(data.data || []);
       }
-    } catch {} finally {
+    } catch { } finally {
       setLinkSearching(false);
     }
   }
@@ -771,8 +771,8 @@ export default function DashboardProductsPage() {
                         editProduct.matchStatus === "linked"
                           ? "bg-green-100 text-green-800 hover:bg-green-100"
                           : editProduct.matchStatus === "auto_matched"
-                          ? "bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200"
-                          : "bg-red-100 text-red-800 hover:bg-red-100"
+                            ? "bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200"
+                            : "bg-red-100 text-red-800 hover:bg-red-100"
                       }
                     >
                       {editProduct.matchStatus === "linked" ? "Linked" : editProduct.matchStatus === "auto_matched" ? "Auto Matched" : "Not Linked"}
@@ -857,7 +857,7 @@ export default function DashboardProductsPage() {
                       placeholder="e.g., Pack of 6"
                       value={editForm.bundleInfo}
                       onChange={(e) => setEditForm({ ...editForm, bundleInfo: e.target.value })}
-                      />
+                    />
                   </div>
                 </div>
               </div>
@@ -982,8 +982,8 @@ export default function DashboardProductsPage() {
                       p.matchStatus === "linked"
                         ? "bg-green-100 text-green-700 text-[10px] shadow-sm"
                         : p.matchStatus === "auto_matched"
-                        ? "bg-amber-100 text-amber-700 text-[10px] shadow-sm"
-                        : "bg-red-100 text-red-700 text-[10px] shadow-sm"
+                          ? "bg-amber-100 text-amber-700 text-[10px] shadow-sm"
+                          : "bg-red-100 text-red-700 text-[10px] shadow-sm"
                     }
                   >
                     {p.matchStatus === "linked" ? "\u2713 Linked" : p.matchStatus === "auto_matched" ? "\u26A1 Auto" : "\u2717 Not Linked"}

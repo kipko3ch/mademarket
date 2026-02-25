@@ -201,20 +201,18 @@ export default function AdminFeaturedPage() {
             return (
               <div
                 key={item.id}
-                className={`flex flex-col sm:flex-row sm:items-center gap-4 border rounded-2xl p-4 sm:p-5 bg-white transition-colors ${
-                  expired
+                className={`flex flex-col sm:flex-row sm:items-center gap-4 border rounded-2xl p-4 sm:p-5 bg-white transition-colors ${expired
                     ? "border-slate-200 opacity-60"
                     : "border-slate-200 hover:border-slate-300"
-                }`}
+                  }`}
               >
                 {/* Left: Icon + info */}
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   <div
-                    className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      isPremium
+                    className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${isPremium
                         ? "bg-amber-100 text-amber-600"
                         : "bg-blue-100 text-blue-600"
-                    }`}
+                      }`}
                   >
                     <Diamond className="h-5 w-5" />
                   </div>
@@ -259,20 +257,17 @@ export default function AdminFeaturedPage() {
                     role="switch"
                     aria-checked={item.active}
                     onClick={() => handleToggle(item)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0056b2] focus-visible:ring-offset-2 ${
-                      item.active ? "bg-[#0056b2]" : "bg-slate-200"
-                    }`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0056b2] focus-visible:ring-offset-2 ${item.active ? "bg-[#0056b2]" : "bg-slate-200"
+                      }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
-                        item.active ? "translate-x-6" : "translate-x-1"
-                      }`}
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${item.active ? "translate-x-6" : "translate-x-1"
+                        }`}
                     />
                   </button>
                   <span
-                    className={`text-xs font-medium w-12 ${
-                      item.active ? "text-[#0056b2]" : "text-slate-400"
-                    }`}
+                    className={`text-xs font-medium w-12 ${item.active ? "text-[#0056b2]" : "text-slate-400"
+                      }`}
                   >
                     {item.active ? "Active" : "Paused"}
                   </span>
@@ -337,7 +332,7 @@ function AddFeaturedForm({
       setSearching(true);
       try {
         const res = await fetch(
-          `/api/products?search=${encodeURIComponent(value.trim())}&pageSize=10`
+          `/api/products?search=${encodeURIComponent(value.trim())}&pageSize=10&all=true`
         );
         if (res.ok) {
           const data = await res.json();
@@ -514,11 +509,10 @@ function AddFeaturedForm({
             <button
               type="button"
               onClick={() => setPriority("standard")}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
-                priority === "standard"
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${priority === "standard"
                   ? "border-blue-300 bg-blue-50 text-blue-700"
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-              }`}
+                }`}
             >
               <Diamond className="h-4 w-4" />
               Standard
@@ -526,11 +520,10 @@ function AddFeaturedForm({
             <button
               type="button"
               onClick={() => setPriority("premium")}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
-                priority === "premium"
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${priority === "premium"
                   ? "border-amber-300 bg-amber-50 text-amber-700"
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-              }`}
+                }`}
             >
               <Diamond className="h-4 w-4" />
               Premium

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { ProductGrid } from "@/components/products/product-grid";
 import { SkeletonGrid } from "@/components/skeleton-card";
-import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight, ArrowUpDown, ShoppingBag } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -56,10 +56,12 @@ function ProductsContent() {
     maxPrice: "",
   });
 
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
+
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page), pageSize: "20" });
-    if (filters.search) params.set("search", filters.search);
+    if (debouncedSearch) params.set("search", debouncedSearch);
     if (filters.category && filters.category !== "all")
       params.set("category", filters.category);
     if (filters.vendorId && filters.vendorId !== "all")
@@ -79,7 +81,14 @@ function ProductsContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, filters]);
+  }, [page, debouncedSearch, filters.category, filters.vendorId, filters.sortBy, filters.minPrice, filters.maxPrice]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(filters.search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [filters.search]);
 
   useEffect(() => {
     async function fetchMeta() {
@@ -91,11 +100,10 @@ function ProductsContent() {
         if (catRes.ok) {
           const cats: Category[] = await catRes.json();
           setCategories(cats);
-          // Apply category from URL param (match by slug or name)
           if (initialCategorySlug) {
             const match = cats.find(
               (c) => c.slug === initialCategorySlug.toLowerCase() ||
-                     c.name.toLowerCase() === initialCategorySlug.toLowerCase()
+                c.name.toLowerCase() === initialCategorySlug.toLowerCase()
             );
             if (match) setFilters((prev) => ({ ...prev, category: match.id }));
           }
@@ -107,8 +115,7 @@ function ProductsContent() {
       } catch { }
     }
     fetchMeta();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialCategorySlug]);
 
   useEffect(() => {
     fetchProducts();
@@ -306,8 +313,24 @@ function ProductsContent() {
       {/* Product Grid */}
       {loading ? (
         <SkeletonGrid count={10} />
-      ) : (
+      ) : products.length > 0 ? (
         <ProductGrid products={products} sponsored={sponsored} />
+      ) : (
+        <div className="py-20 text-center bg-white rounded-3xl border border-slate-100 animate-in fade-in zoom-in duration-500">
+          <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ShoppingBag className="h-10 w-10 text-slate-200" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-900 mb-2">No matching products found</h3>
+          <p className="text-slate-500 text-sm max-w-xs mx-auto mb-8">
+            We couldn&apos;t find any products matching &quot;{filters.search}&quot;. Try adjusting your filters or search terms.
+          </p>
+          <button
+            onClick={clearFilters}
+            className="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/10"
+          >
+            Reset all filters
+          </button>
+        </div>
       )}
 
       {/* Pagination */}

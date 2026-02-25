@@ -61,7 +61,7 @@ export async function GET(
       );
     }
 
-    // Fetch bundle products with product details, bundle images, related bundles, and related brochures
+    // Fetch related items with full image/product previews
     const [bundleProductRows, bundleImageRows, relatedBundles, relatedBrochures] = await Promise.all([
       db
         .select({
@@ -82,42 +82,32 @@ export async function GET(
         .from(bundleImages)
         .where(eq(bundleImages.bundleId, result.id)),
 
-      // Related bundles (same branch, active, exclude current, limit 4)
-      db
-        .select({
-          id: bundles.id,
-          name: bundles.name,
-          slug: bundles.slug,
-          description: bundles.description,
-          imageUrl: bundles.imageUrl,
-          price: bundles.price,
-          externalUrl: bundles.externalUrl,
-          items: bundles.items,
-          branchId: bundles.branchId,
-        })
-        .from(bundles)
-        .where(
-          and(
-            eq(bundles.branchId, result.branchId!),
-            eq(bundles.active, true),
-            ne(bundles.id, result.id)
-          )
-        )
-        .orderBy(desc(bundles.createdAt))
-        .limit(4),
+      db.query.bundles.findMany({
+        where: and(
+          eq(bundles.branchId, result.branchId!),
+          eq(bundles.active, true),
+          ne(bundles.id, result.id)
+        ),
+        with: {
+          bundleImages: true,
+          bundleProducts: {
+            with: {
+              product: true
+            }
+          }
+        },
+        orderBy: [desc(bundles.createdAt)],
+        limit: 4,
+      }),
 
-      // Related brochures (same branch, published, limit 4)
       db
         .select({
           id: brochures.id,
           title: brochures.title,
           slug: brochures.slug,
-          description: brochures.description,
-          bannerImageUrl: brochures.bannerImageUrl,
           thumbnailImageUrl: brochures.thumbnailImageUrl,
           validFrom: brochures.validFrom,
           validUntil: brochures.validUntil,
-          createdAt: brochures.createdAt,
         })
         .from(brochures)
         .where(
@@ -126,7 +116,6 @@ export async function GET(
             eq(brochures.status, "published")
           )
         )
-        .orderBy(desc(brochures.createdAt))
         .limit(4),
     ]);
 
@@ -134,7 +123,6 @@ export async function GET(
       bundle: {
         ...result,
         price: Number(result.price),
-        // backward-compat aliases
         storeName: result.vendorName,
         storeSlug: result.vendorSlug,
         storeLogo: result.vendorLogoUrl,
@@ -142,11 +130,23 @@ export async function GET(
         storeWebsite: result.vendorWebsiteUrl,
         storeWhatsapp: result.branchWhatsapp,
         bundleProducts: bundleProductRows,
-        bundleImages: bundleImageRows,
+        bundleImagesRaw: bundleImageRows,
+        // formatted for BundleCard compatibility
+        productImages: bundleProductRows.map(p => p.productImage).filter(Boolean),
+        bundleImages: bundleImageRows.map(i => i.imageUrl),
       },
       relatedBundles: relatedBundles.map((b) => ({
-        ...b,
+        id: b.id,
+        name: b.name,
+        slug: b.slug,
+        description: b.description,
+        imageUrl: b.imageUrl,
         price: Number(b.price),
+        vendorName: result.vendorName,
+        vendorSlug: result.vendorSlug,
+        vendorLogoUrl: result.vendorLogoUrl,
+        bundleImages: b.bundleImages.map(bi => bi.imageUrl),
+        productImages: b.bundleProducts.map(bp => bp.product.imageUrl).filter(Boolean) as string[],
       })),
       relatedBrochures,
     });

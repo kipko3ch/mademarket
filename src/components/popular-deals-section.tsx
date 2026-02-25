@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ProductCard } from "@/components/products/product-card";
+import { SkeletonCard } from "@/components/skeleton-card";
 
 export function PopularDealsSection() {
     const [products, setProducts] = useState<any[]>([]);
@@ -24,10 +25,16 @@ export function PopularDealsSection() {
 
     if (loading) return (
         <section className="container mx-auto max-w-7xl px-4 pb-16">
-            <div className="flex h-40 gap-4 overflow-hidden">
-                <div className="h-full w-48 shrink-0 rounded-2xl bg-slate-100 animate-pulse" />
-                <div className="h-full w-48 shrink-0 rounded-2xl bg-slate-100 animate-pulse" />
-                <div className="h-full w-48 shrink-0 rounded-2xl bg-slate-100 animate-pulse" />
+            <div className="mb-8">
+                <div className="h-8 w-48 bg-slate-100 rounded-full animate-pulse mb-2" />
+                <div className="h-4 w-64 bg-slate-50 rounded-full animate-pulse" />
+            </div>
+            <div className="flex overflow-x-auto gap-4 sm:gap-6 pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+                {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="w-[160px] sm:w-[220px] md:w-[260px] shrink-0">
+                        <SkeletonCard />
+                    </div>
+                ))}
             </div>
         </section>
     );

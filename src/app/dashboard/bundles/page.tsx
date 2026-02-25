@@ -119,7 +119,7 @@ export default function VendorBundlesPage() {
     }
     setSearching(true);
     try {
-      const res = await fetch(`/api/products?search=${encodeURIComponent(query.trim())}&pageSize=8`);
+      const res = await fetch(`/api/products?search=${encodeURIComponent(query.trim())}&pageSize=8&all=true`);
       if (res.ok) {
         const data = await res.json();
         const products: SearchProduct[] = (data.products || data || []).map(
