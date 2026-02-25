@@ -529,7 +529,20 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
 function BundleCarousel({ bundles }: { bundles: BundleData[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const visibleCount = typeof window !== "undefined" && window.innerWidth >= 768 ? 3 : typeof window !== "undefined" && window.innerWidth >= 640 ? 2 : 1;
+  const [visibleCount, setVisibleCount] = useState(3);
+
+  // Set visibleCount after mount based on actual window width
+  useEffect(() => {
+    function update() {
+      if (window.innerWidth >= 768) setVisibleCount(3);
+      else if (window.innerWidth >= 640) setVisibleCount(2);
+      else setVisibleCount(1);
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
   const totalPages = Math.ceil(bundles.length / visibleCount);
 
   useEffect(() => {
@@ -539,6 +552,11 @@ function BundleCarousel({ bundles }: { bundles: BundleData[] }) {
     }, 4000);
     return () => clearInterval(interval);
   }, [isPaused, totalPages]);
+
+  // Reset index when visibleCount changes to avoid out-of-bounds
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [visibleCount]);
 
   const visibleBundles = bundles.slice(
     activeIndex * visibleCount,
@@ -586,6 +604,15 @@ function BundleCarousel({ bundles }: { bundles: BundleData[] }) {
         {visibleBundles.map((bundle) => (
           <BundleCard key={bundle.id} bundle={bundle} />
         ))}
+      </div>
+      {/* Preload all bundle images to avoid loading delays on carousel rotation */}
+      <div className="hidden">
+        {bundles.map((bundle) =>
+          bundle.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={bundle.id} src={bundle.imageUrl} alt="" />
+          ) : null
+        )}
       </div>
     </section>
   );
