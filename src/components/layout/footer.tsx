@@ -3,6 +3,7 @@ import Link from "next/link";
 // No icons used in the simplified brand section currently
 
 const platformLinks = [
+  { href: "/about", label: "About MaDe Market" },
   { href: "/products", label: "Browse Products" },
   { href: "/products", label: "Weekly Specials" },
   { href: "/cart", label: "Smart Cart Comparison" },

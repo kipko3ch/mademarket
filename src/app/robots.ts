@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: '/',
             disallow: ['/admin/', '/api/'],
         },
-        sitemap: 'https://mademarket.com.na/sitemap.xml',
+        sitemap: 'https://mademarketnam.com/sitemap.xml',
     };
 }

@@ -1,0 +1,16 @@
+{
+    "name": "MaDe Market Namibia",
+    "short_name": "MaDe Market",
+    "description": "Compare grocery prices across Shoprite, Checkers, SPAR, and more in Namibia.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#0056b2",
+    "icons": [
+        {
+            "src": "/icon.png",
+            "sizes": "1024x1024",
+            "type": "image/png"
+        }
+    ]
+}
