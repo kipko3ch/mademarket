@@ -17,10 +17,10 @@ const regions = [
 ];
 
 const categories = [
-  { href: "/products?category=Groceries", label: "Groceries" },
-  { href: "/products?category=Drinks", label: "Drinks & Beverages" },
-  { href: "/products?category=Personal Care", label: "Personal Care" },
-  { href: "/products?category=Household", label: "Household Essentials" },
+  { href: "/products?category=groceries", label: "Groceries" },
+  { href: "/products?category=drinks", label: "Drinks & Beverages" },
+  { href: "/products?category=personal-care", label: "Personal Care" },
+  { href: "/products?category=household", label: "Household Essentials" },
 ];
 
 const partnerLinks = [
@@ -44,7 +44,7 @@ export function Footer() {
               />
             </Link>
             <p className="text-slate-500 text-sm leading-relaxed max-w-sm">
-              MaDe Market is Namibia&apos;s independent price comparison platform. We help you find the lowest grocery prices across Shoprite, SPAR, Checkers, and more.
+              We help you find the lowest grocery price across retailers.
             </p>
           </div>
 

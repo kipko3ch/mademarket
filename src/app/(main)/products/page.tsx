@@ -37,6 +37,7 @@ interface Vendor {
 function ProductsContent() {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
+  const initialCategorySlug = searchParams.get("category") || "";
 
   const [products, setProducts] = useState([]);
   const [sponsored, setSponsored] = useState([]);
@@ -87,7 +88,18 @@ function ProductsContent() {
           fetch("/api/categories"),
           fetch("/api/vendors"),
         ]);
-        if (catRes.ok) setCategories(await catRes.json());
+        if (catRes.ok) {
+          const cats: Category[] = await catRes.json();
+          setCategories(cats);
+          // Apply category from URL param (match by slug or name)
+          if (initialCategorySlug) {
+            const match = cats.find(
+              (c) => c.slug === initialCategorySlug.toLowerCase() ||
+                     c.name.toLowerCase() === initialCategorySlug.toLowerCase()
+            );
+            if (match) setFilters((prev) => ({ ...prev, category: match.id }));
+          }
+        }
         if (vendorRes.ok) {
           const data = await vendorRes.json();
           setVendors(Array.isArray(data) ? data : data.vendors || []);
@@ -95,6 +107,7 @@ function ProductsContent() {
       } catch { }
     }
     fetchMeta();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
