@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,9 @@ const adminLinks = [
 export function AdminHeader() {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <header className="flex-shrink-0 z-20 w-full px-6 py-4 md:px-10 md:py-6 flex items-center justify-between gap-4">
@@ -93,7 +95,18 @@ export function AdminHeader() {
         {/* Search Bar (desktop) */}
         <div className="hidden md:flex items-center gap-2 bg-white px-4 py-2.5 rounded-full border border-slate-200/60 shadow-sm w-full max-w-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 shrink-0"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-          <input type="text" placeholder="Search task" className="border-none outline-none bg-transparent text-sm w-full text-slate-700 placeholder:text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search stores, products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && searchQuery.trim()) {
+                router.push(`/admin/stores?search=${encodeURIComponent(searchQuery.trim())}`);
+              }
+            }}
+            className="border-none outline-none bg-transparent text-sm w-full text-slate-700 placeholder:text-slate-400"
+          />
           <div className="flex items-center justify-center bg-slate-100 px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-400 shrink-0 gap-0.5">
             <span className="text-[12px] leading-none mb-0.5">⌘</span>F
           </div>

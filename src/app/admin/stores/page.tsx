@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -66,8 +67,10 @@ interface BranchItem {
 
 /* ---------- Component ---------- */
 
-export default function AdminVendorsPage() {
+function AdminVendorsContent() {
+  const searchParams = useSearchParams();
   const [vendors, setVendors] = useState<VendorItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<VendorItem | null>(null);
@@ -225,6 +228,17 @@ export default function AdminVendorsPage() {
         </p>
       </div>
 
+      {/* Search bar */}
+      <div className="bg-white border border-slate-100 rounded-2xl p-3">
+        <input
+          type="text"
+          placeholder="Search vendors by name or email..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-primary focus:border-transparent focus:bg-white transition-all outline-none"
+        />
+      </div>
+
       <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
         <Table>
           <TableHeader>
@@ -239,15 +253,23 @@ export default function AdminVendorsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {vendors.length === 0 ? (
+            {vendors.filter((v) => {
+                if (!searchQuery.trim()) return true;
+                const q = searchQuery.toLowerCase();
+                return v.name.toLowerCase().includes(q) || v.ownerEmail.toLowerCase().includes(q) || v.ownerName.toLowerCase().includes(q);
+              }).length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-12 text-slate-400">
                   <Store className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  No vendors registered yet
+                  {searchQuery ? "No vendors match your search" : "No vendors registered yet"}
                 </TableCell>
               </TableRow>
             ) : (
-              vendors.map((vendor) => {
+              vendors.filter((v) => {
+                if (!searchQuery.trim()) return true;
+                const q = searchQuery.toLowerCase();
+                return v.name.toLowerCase().includes(q) || v.ownerEmail.toLowerCase().includes(q) || v.ownerName.toLowerCase().includes(q);
+              }).map((vendor) => {
                 const isExpanded = expandedVendorId === vendor.id;
                 const vendorBranches = branchesMap[vendor.id] || [];
 
@@ -542,5 +564,13 @@ export default function AdminVendorsPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+export default function AdminVendorsPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminVendorsContent />
+    </Suspense>
   );
 }
