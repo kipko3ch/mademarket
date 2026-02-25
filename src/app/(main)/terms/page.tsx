@@ -146,7 +146,7 @@ const sections = [
             },
             {
                 subtitle: "Contact for Legal Matters",
-                text: "For any legal inquiries or concerns regarding these Terms of Service, please contact us at legal@mademarket.com. We will make every effort to address your concerns promptly and fairly.",
+                text: "For any legal inquiries or concerns regarding these Terms of Service, please contact us at info@mademarketnam.com. We will make every effort to address your concerns promptly and fairly.",
             },
         ],
     },
@@ -259,14 +259,14 @@ export default function TermsOfServicePage() {
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-3">
-                            <Link
-                                href="/contact"
+                            <a
+                                href="mailto:info@mademarketnam.com"
                                 className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-blue-700 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
                             >
                                 <Mail className="h-4 w-4" />
-                                Contact Us
+                                info@mademarketnam.com
                                 <ArrowRight className="h-4 w-4" />
-                            </Link>
+                            </a>
                             <Link
                                 href="/privacy"
                                 className="inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-white/10 hover:-translate-y-0.5"

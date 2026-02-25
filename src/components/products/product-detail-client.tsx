@@ -14,6 +14,7 @@ import {
     ChevronRight,
     Info,
     Home,
+    Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -246,76 +247,116 @@ export function ProductDetailClient({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-3">
-                            {branchPrices.map((bp, idx) => {
-                                const isCheapest = idx === 0 && branchPrices.length > 1;
+                        <div className="grid grid-cols-1 gap-3 relative">
+                            {status === "authenticated" ? (
+                                <>
+                                    {branchPrices.map((bp, idx) => {
+                                        const isCheapest = idx === 0 && branchPrices.length > 1;
 
-                                return (
-                                    <div
-                                        key={bp.branchId}
-                                        className={cn(
-                                            "relative group flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300",
-                                            isCheapest
-                                                ? "bg-primary/[0.02] border-primary/20 shadow-sm"
-                                                : "bg-white border-slate-100 hover:border-primary/20"
-                                        )}
-                                    >
-                                        {isCheapest && (
-                                            <div className="absolute -top-2 -left-2 bg-primary text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-lg shadow-xl shadow-primary/20 z-10">
-                                                Cheapest
-                                            </div>
-                                        )}
-
-                                        {/* Store Link */}
-                                        <Link href={`/store/${bp.vendorSlug}`} className="shrink-0">
-                                            <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-xl border border-slate-100 p-2 shadow-sm flex items-center justify-center transition-transform group-hover:scale-105">
-                                                <img src={bp.vendorLogoUrl || ""} alt="" className="w-full h-full object-contain" />
-                                            </div>
-                                        </Link>
-
-                                        {/* Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="font-bold text-slate-900 text-sm md:text-base leading-tight truncate">
-                                                    {bp.vendorName}
-                                                </span>
-                                                {bp.inStock ? (
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" title="In Stock" />
-                                                ) : (
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" title="Out of Stock" />
+                                        return (
+                                            <div
+                                                key={bp.branchId}
+                                                className={cn(
+                                                    "relative group flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300",
+                                                    isCheapest
+                                                        ? "bg-primary/[0.02] border-primary/20 shadow-sm"
+                                                        : "bg-white border-slate-100 hover:border-primary/20"
                                                 )}
-                                            </div>
-                                            <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1 mt-0.5 truncate uppercase tracking-widest">
-                                                <MapPin className="h-2.5 w-2.5" />
-                                                {bp.branchTown || "General Branch"}
-                                            </p>
-                                        </div>
-
-                                        {/* Price */}
-                                        <div className="text-right">
-                                            <p className={cn("text-lg md:text-xl font-black", isCheapest ? "text-primary" : "text-slate-900")}>
-                                                {formatCurrency(bp.price)}
-                                            </p>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{bp.branchName}</p>
-                                        </div>
-
-                                        {/* Action */}
-                                        <div className="pl-2">
-                                            <Link
-                                                href={`/store/${bp.vendorSlug}`}
-                                                className="w-10 h-10 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center transition-all"
                                             >
-                                                <ChevronRight className="h-4 w-4" />
-                                            </Link>
+                                                {isCheapest && (
+                                                    <div className="absolute -top-2 -left-2 bg-primary text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-lg shadow-xl shadow-primary/20 z-10">
+                                                        Cheapest
+                                                    </div>
+                                                )}
+
+                                                {/* Store Link */}
+                                                <Link href={`/store/${bp.vendorSlug}`} className="shrink-0">
+                                                    <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-xl border border-slate-100 p-2 shadow-sm flex items-center justify-center transition-transform group-hover:scale-105">
+                                                        <img src={bp.vendorLogoUrl || ""} alt="" className="w-full h-full object-contain" />
+                                                    </div>
+                                                </Link>
+
+                                                {/* Info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="font-bold text-slate-900 text-sm md:text-base leading-tight truncate">
+                                                            {bp.vendorName}
+                                                        </span>
+                                                        {bp.inStock ? (
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-green-500" title="In Stock" />
+                                                        ) : (
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" title="Out of Stock" />
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1 mt-0.5 truncate uppercase tracking-widest">
+                                                        <MapPin className="h-2.5 w-2.5" />
+                                                        {bp.branchTown || "General Branch"}
+                                                    </p>
+                                                </div>
+
+                                                {/* Price */}
+                                                <div className="text-right">
+                                                    <p className={cn("text-lg md:text-xl font-black", isCheapest ? "text-primary" : "text-slate-900")}>
+                                                        {formatCurrency(bp.price)}
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{bp.branchName}</p>
+                                                </div>
+
+                                                {/* Action */}
+                                                <div className="pl-2">
+                                                    <Link
+                                                        href={`/store/${bp.vendorSlug}`}
+                                                        className="w-10 h-10 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center transition-all"
+                                                    >
+                                                        <ChevronRight className="h-4 w-4" />
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                    {branchPrices.length === 0 && (
+                                        <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                            <img src="/icons/productplaceholder.png" alt="" className="h-10 w-10 mx-auto mb-3 object-contain opacity-20" />
+                                            <p className="text-slate-400 font-bold text-sm">No vendors found for this item</p>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="relative overflow-hidden rounded-3xl border border-slate-100 bg-slate-50/50 p-8 md:p-12 text-center">
+                                    {/* Blurred Background Items */}
+                                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none select-none overflow-hidden blur-sm">
+                                        <div className="flex flex-col gap-4 p-4">
+                                            {[1, 2, 3].map((i) => (
+                                                <div key={i} className="h-20 bg-slate-900 rounded-2xl w-full" />
+                                            ))}
                                         </div>
                                     </div>
-                                );
-                            })}
 
-                            {branchPrices.length === 0 && (
-                                <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                    <img src="/icons/productplaceholder.png" alt="" className="h-10 w-10 mx-auto mb-3 object-contain opacity-20" />
-                                    <p className="text-slate-400 font-bold text-sm">No vendors found for this item</p>
+                                    <div className="relative z-10 flex flex-col items-center max-w-sm mx-auto">
+                                        <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mb-6">
+                                            <Lock className="h-6 w-6 text-primary" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-slate-900 mb-3">Login to compare prices</h3>
+                                        <p className="text-slate-500 text-sm leading-relaxed mb-8">
+                                            Join thousands of Namibians saving on their groceries. Access live pricing data and store comparisons.
+                                        </p>
+                                        <div className="flex flex-col sm:flex-row gap-3 w-full">
+                                            <Button
+                                                onClick={() => router.push("/login")}
+                                                className="rounded-xl h-12 font-bold bg-primary hover:bg-primary/90 text-white flex-1"
+                                            >
+                                                Sign In
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => router.push("/register")}
+                                                className="rounded-xl h-12 font-bold border-slate-200 text-slate-600 hover:bg-white transition-all flex-1"
+                                            >
+                                                Create Account
+                                            </Button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>

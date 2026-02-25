@@ -6,7 +6,7 @@ export default auth((req) => {
   const user = req.auth?.user;
 
   // Public routes - no auth required
-  const publicPaths = ["/", "/login", "/register", "/products", "/compare", "/cart", "/store", "/privacy", "/terms", "/about", "/contact", "/api/auth", "/api/seed-admin", "/auth/redirect"];
+  const publicPaths = ["/", "/login", "/register", "/products", "/product", "/compare", "/cart", "/store", "/privacy", "/terms", "/about", "/contact", "/api/auth", "/api/seed-admin", "/auth/redirect"];
   const isPublic = publicPaths.some(
     (path) => pathname === path || pathname.startsWith(path + "/")
   );

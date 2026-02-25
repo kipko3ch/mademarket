@@ -52,7 +52,7 @@ export default function AboutPage() {
                             <span className="text-[10px] font-black text-primary/40 uppercase tracking-[0.3em] mb-4 block">01 / Mission</span>
                             <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">Our Mission</h3>
                             <p className="text-slate-500 leading-relaxed text-sm md:text-base">
-                                To bring radical transparency to the Namibian retail market. We empower you with real-time data, ensuring you never overpay for basic necessities again.
+                                We drive transparency in the Namibian retail market through real-time pricing data, empowering consumers to make informed purchasing decisions.
                             </p>
                         </div>
 
@@ -68,9 +68,9 @@ export default function AboutPage() {
                         {/* Built for Namibia */}
                         <div className="group relative pt-8 border-t-2 border-slate-100 hover:border-red-500 transition-colors duration-500">
                             <span className="text-[10px] font-black text-red-500/40 uppercase tracking-[0.2em] mb-4 block">03 / Community</span>
-                            <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">Built for Namibia</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">Built for Namibian Market</h3>
                             <p className="text-slate-500 leading-relaxed text-sm md:text-base">
-                                From the streets of Windhoek to the corners of Katima Mulilo. We track the local stores you shop at: Shoprite, Checkers, SPAR, and your favorite local vendors.
+                                Built for the Namibian market to compare retailers prices and ensure you get the best value for your money.
                             </p>
                         </div>
                     </div>

@@ -9,6 +9,10 @@ import { formatCurrency } from "@/lib/currency";
 import { cn, productUrl } from "@/lib/utils";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface BranchOption {
   id: string;
@@ -36,6 +40,8 @@ export default function ComparePage() {
     compare,
   } = useCompare();
   const { addItem } = useCart();
+  const { status } = useSession();
+  const router = useRouter();
 
   function toggleProductSelection(productId: string) {
     setSelectedProducts((prev) => {
@@ -256,244 +262,277 @@ export default function ComparePage() {
             </div>
           )}
 
-          {/* ── Desktop Table ─────────────────────────── */}
-          {!loading && sortedResults.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden hidden sm:block">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="p-4 font-heading text-xs uppercase tracking-wider text-slate-400 min-w-[240px]">
-                        Product Details
-                      </th>
-                      {comparedBranches.map((branch) => (
-                        <th key={branch.id} className="p-4 text-center min-w-[140px]">
-                          <Link href={`/store/${branch.vendorSlug}`} className="flex flex-col items-center gap-1 hover:opacity-100 transition-all">
-                            <div className="h-8 w-24 flex items-center justify-center grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all">
-                              <StoreLogo src={branch.vendorLogoUrl} name={branch.vendorName} size="sm" />
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">
-                              {branch.branchTown
-                                ? `${branch.vendorName} \u2013 ${branch.branchTown}`
-                                : branch.vendorName}
-                            </span>
-                          </Link>
-                        </th>
-                      ))}
-                      <th className="p-4 w-12"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {sortedResults.map((result) => {
-                      const prices = result.prices;
-                      const minP = Math.min(...prices.map((p) => p.price));
+          {/* ── Comparison Results (Gated) ────────────────── */}
+          {status === "authenticated" ? (
+            <>
+              {/* ── Desktop Table ─────────────────────────── */}
+              {!loading && sortedResults.length > 0 && (
+                <div className="bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden hidden sm:block">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                          <th className="p-4 font-heading text-xs uppercase tracking-wider text-slate-400 min-w-[240px]">
+                            Product Details
+                          </th>
+                          {comparedBranches.map((branch) => (
+                            <th key={branch.id} className="p-4 text-center min-w-[140px]">
+                              <Link href={`/store/${branch.vendorSlug}`} className="flex flex-col items-center gap-1 hover:opacity-100 transition-all">
+                                <div className="h-8 w-24 flex items-center justify-center grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all">
+                                  <StoreLogo src={branch.vendorLogoUrl} name={branch.vendorName} size="sm" />
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                  {branch.branchTown
+                                    ? `${branch.vendorName} \u2013 ${branch.branchTown}`
+                                    : branch.vendorName}
+                                </span>
+                              </Link>
+                            </th>
+                          ))}
+                          <th className="p-4 w-12"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {sortedResults.map((result) => {
+                          const prices = result.prices;
+                          const minP = Math.min(...prices.map((p) => p.price));
 
-                      return (
-                        <tr key={result.productId} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="p-4">
-                            <Link href={productUrl(result.productId, result.productName)} className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
-                                {result.productImage ? (
-                                  <img src={result.productImage} alt="" className="h-full w-full object-contain p-1" />
-                                ) : (
-                                  <img src="/icons/productplaceholder.png" alt="" className="h-5 w-5 object-contain opacity-40" />
-                                )}
-                              </div>
-                              <div>
-                                <p className="font-bold text-slate-900 hover:text-primary transition-colors">{result.productName}</p>
-                                {result.category && (
-                                  <p className="text-xs text-slate-500">{result.category}</p>
-                                )}
-                              </div>
-                            </Link>
-                          </td>
+                          return (
+                            <tr key={result.productId} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="p-4">
+                                <Link href={productUrl(result.productId, result.productName)} className="flex items-center gap-3">
+                                  <div className="h-10 w-10 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                                    {result.productImage ? (
+                                      <img src={result.productImage} alt="" className="h-full w-full object-contain p-1" />
+                                    ) : (
+                                      <img src="/icons/productplaceholder.png" alt="" className="h-5 w-5 object-contain opacity-40" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="font-bold text-slate-900 hover:text-primary transition-colors">{result.productName}</p>
+                                    {result.category && (
+                                      <p className="text-xs text-slate-500">{result.category}</p>
+                                    )}
+                                  </div>
+                                </Link>
+                              </td>
+                              {comparedBranches.map((branch) => {
+                                const priceEntry = prices.find((p) => p.branchId === branch.id);
+                                const isBest = priceEntry && priceEntry.price === minP;
+                                return (
+                                  <td key={branch.id} className="p-4 text-center">
+                                    {priceEntry ? (
+                                      <div className="flex flex-col items-center gap-1">
+                                        <span className={cn(
+                                          "text-lg font-bold",
+                                          isBest ? "text-green-600" : "text-slate-900"
+                                        )}>
+                                          {formatCurrency(priceEntry.price)}
+                                        </span>
+                                        {isBest && (
+                                          <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
+                                            BEST PRICE
+                                          </span>
+                                        )}
+                                        {!isBest && priceEntry.difference > 0 && (
+                                          <span className="text-[10px] text-red-500 font-medium">
+                                            +{formatCurrency(priceEntry.difference)}
+                                          </span>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <span className="text-sm text-slate-400">N/A</span>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                              <td className="p-4">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedProducts.has(result.productId)}
+                                    onChange={() => toggleProductSelection(result.productId)}
+                                    className="rounded border-slate-300 text-primary focus:ring-primary"
+                                  />
+                                  <button
+                                    onClick={() => addSingleToCart(result.productId, result.productName, result.productImage)}
+                                    className={cn(
+                                      "h-7 w-7 rounded-md flex items-center justify-center transition-colors",
+                                      addedProducts.has(result.productId)
+                                        ? "bg-green-100 text-green-600"
+                                        : "bg-primary/10 text-primary hover:bg-primary/20"
+                                    )}
+                                    title="Add to cart"
+                                  >
+                                    {addedProducts.has(result.productId) ? (
+                                      <Check className="h-3.5 w-3.5" />
+                                    ) : (
+                                      <Plus className="h-3.5 w-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Table Footer */}
+                  <div className="bg-slate-50 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 border-t border-slate-200">
+                    <div className="flex flex-col gap-2">
+                      <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wider">
+                        Total Cart Estimate (Selected Items)
+                      </h4>
+                      <div className="flex gap-8">
+                        {comparedBranches.map((branch) => {
+                          const total = sortedResults.reduce((sum, result) => {
+                            const pe = result.prices.find((p) => p.branchId === branch.id);
+                            return sum + (pe?.price || 0);
+                          }, 0);
+                          const allTotals = comparedBranches.map((b) =>
+                            sortedResults.reduce((sum, r) => {
+                              const pe = r.prices.find((p) => p.branchId === b.id);
+                              return sum + (pe?.price || 0);
+                            }, 0)
+                          );
+                          const isCheapest = total <= Math.min(...allTotals);
+                          const displayName = branch.branchTown
+                            ? `${branch.vendorName} \u2013 ${branch.branchTown}`
+                            : branch.vendorName;
+                          return (
+                            <div key={branch.id}>
+                              <p className={cn("text-[10px] font-bold uppercase", isCheapest ? "text-primary" : "text-slate-400")}>
+                                {displayName}
+                              </p>
+                              <p className={cn("text-xl font-bold", isCheapest && "text-primary")}>
+                                {formatCurrency(total)}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-slate-500 italic">Prices updated in real-time</span>
+                      <button className="bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded font-bold text-sm transition-colors border border-primary/20">
+                        Compare More Branches
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Mobile Card View ──────────────────────── */}
+              {!loading && sortedResults.length > 0 && (
+                <div className="block sm:hidden space-y-3">
+                  {sortedResults.map((result) => {
+                    const prices = result.prices;
+                    const minP = Math.min(...prices.map((p) => p.price));
+                    const maxP = Math.max(...prices.map((p) => p.price));
+                    const savings = maxP - minP;
+
+                    return (
+                      <div key={result.productId} className="bg-white border border-slate-200 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex-1 mr-2">
+                            <p className="font-bold text-sm text-slate-900">{result.productName}</p>
+                            {result.category && <p className="text-[10px] text-slate-500">{result.category}</p>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {savings > 0 && (
+                              <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                Save {formatCurrency(savings)}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => addSingleToCart(result.productId, result.productName, result.productImage)}
+                              className={cn(
+                                "h-7 px-2.5 rounded-lg flex items-center gap-1 text-[10px] font-bold transition-colors shrink-0",
+                                addedProducts.has(result.productId)
+                                  ? "bg-green-100 text-green-600"
+                                  : "bg-primary/10 text-primary hover:bg-primary/20"
+                              )}
+                            >
+                              {addedProducts.has(result.productId) ? (
+                                <>
+                                  <Check className="h-3 w-3" />
+                                  Added
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="h-3 w-3" />
+                                  Cart
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
                           {comparedBranches.map((branch) => {
                             const priceEntry = prices.find((p) => p.branchId === branch.id);
                             const isBest = priceEntry && priceEntry.price === minP;
+                            const displayName = branch.branchTown
+                              ? `${branch.vendorName} \u2013 ${branch.branchTown}`
+                              : branch.vendorName;
                             return (
-                              <td key={branch.id} className="p-4 text-center">
+                              <div key={branch.id} className="flex items-center justify-between text-sm">
+                                <div className="flex items-center gap-2">
+                                  <StoreLogo src={branch.vendorLogoUrl} name={branch.vendorName} size="xs" />
+                                  <span className="text-xs text-slate-500">{displayName}</span>
+                                </div>
                                 {priceEntry ? (
-                                  <div className="flex flex-col items-center gap-1">
-                                    <span className={cn(
-                                      "text-lg font-bold",
-                                      isBest ? "text-green-600" : "text-slate-900"
-                                    )}>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={cn("font-bold", isBest ? "text-green-600" : "text-slate-900")}>
                                       {formatCurrency(priceEntry.price)}
                                     </span>
                                     {isBest && (
-                                      <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
-                                        BEST PRICE
-                                      </span>
-                                    )}
-                                    {!isBest && priceEntry.difference > 0 && (
-                                      <span className="text-[10px] text-red-500 font-medium">
-                                        +{formatCurrency(priceEntry.difference)}
+                                      <span className="bg-green-100 text-green-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                                        BEST
                                       </span>
                                     )}
                                   </div>
                                 ) : (
-                                  <span className="text-sm text-slate-400">N/A</span>
-                                )}
-                              </td>
-                            );
-                          })}
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={selectedProducts.has(result.productId)}
-                                onChange={() => toggleProductSelection(result.productId)}
-                                className="rounded border-slate-300 text-primary focus:ring-primary"
-                              />
-                              <button
-                                onClick={() => addSingleToCart(result.productId, result.productName, result.productImage)}
-                                className={cn(
-                                  "h-7 w-7 rounded-md flex items-center justify-center transition-colors",
-                                  addedProducts.has(result.productId)
-                                    ? "bg-green-100 text-green-600"
-                                    : "bg-primary/10 text-primary hover:bg-primary/20"
-                                )}
-                                title="Add to cart"
-                              >
-                                {addedProducts.has(result.productId) ? (
-                                  <Check className="h-3.5 w-3.5" />
-                                ) : (
-                                  <Plus className="h-3.5 w-3.5" />
-                                )}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Table Footer */}
-              <div className="bg-slate-50 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 border-t border-slate-200">
-                <div className="flex flex-col gap-2">
-                  <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wider">
-                    Total Cart Estimate (Selected Items)
-                  </h4>
-                  <div className="flex gap-8">
-                    {comparedBranches.map((branch) => {
-                      const total = sortedResults.reduce((sum, result) => {
-                        const pe = result.prices.find((p) => p.branchId === branch.id);
-                        return sum + (pe?.price || 0);
-                      }, 0);
-                      const allTotals = comparedBranches.map((b) =>
-                        sortedResults.reduce((sum, r) => {
-                          const pe = r.prices.find((p) => p.branchId === b.id);
-                          return sum + (pe?.price || 0);
-                        }, 0)
-                      );
-                      const isCheapest = total <= Math.min(...allTotals);
-                      const displayName = branch.branchTown
-                        ? `${branch.vendorName} \u2013 ${branch.branchTown}`
-                        : branch.vendorName;
-                      return (
-                        <div key={branch.id}>
-                          <p className={cn("text-[10px] font-bold uppercase", isCheapest ? "text-primary" : "text-slate-400")}>
-                            {displayName}
-                          </p>
-                          <p className={cn("text-xl font-bold", isCheapest && "text-primary")}>
-                            {formatCurrency(total)}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-xs text-slate-500 italic">Prices updated in real-time</span>
-                  <button className="bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded font-bold text-sm transition-colors border border-primary/20">
-                    Compare More Branches
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Mobile Card View ──────────────────────── */}
-          {!loading && sortedResults.length > 0 && (
-            <div className="block sm:hidden space-y-3">
-              {sortedResults.map((result) => {
-                const prices = result.prices;
-                const minP = Math.min(...prices.map((p) => p.price));
-                const maxP = Math.max(...prices.map((p) => p.price));
-                const savings = maxP - minP;
-
-                return (
-                  <div key={result.productId} className="bg-white border border-slate-200 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex-1 mr-2">
-                        <p className="font-bold text-sm text-slate-900">{result.productName}</p>
-                        {result.category && <p className="text-[10px] text-slate-500">{result.category}</p>}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {savings > 0 && (
-                          <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                            Save {formatCurrency(savings)}
-                          </span>
-                        )}
-                        <button
-                          onClick={() => addSingleToCart(result.productId, result.productName, result.productImage)}
-                          className={cn(
-                            "h-7 px-2.5 rounded-lg flex items-center gap-1 text-[10px] font-bold transition-colors shrink-0",
-                            addedProducts.has(result.productId)
-                              ? "bg-green-100 text-green-600"
-                              : "bg-primary/10 text-primary hover:bg-primary/20"
-                          )}
-                        >
-                          {addedProducts.has(result.productId) ? (
-                            <>
-                              <Check className="h-3 w-3" />
-                              Added
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="h-3 w-3" />
-                              Cart
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      {comparedBranches.map((branch) => {
-                        const priceEntry = prices.find((p) => p.branchId === branch.id);
-                        const isBest = priceEntry && priceEntry.price === minP;
-                        const displayName = branch.branchTown
-                          ? `${branch.vendorName} \u2013 ${branch.branchTown}`
-                          : branch.vendorName;
-                        return (
-                          <div key={branch.id} className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
-                              <StoreLogo src={branch.vendorLogoUrl} name={branch.vendorName} size="xs" />
-                              <span className="text-xs text-slate-500">{displayName}</span>
-                            </div>
-                            {priceEntry ? (
-                              <div className="flex items-center gap-1.5">
-                                <span className={cn("font-bold", isBest ? "text-green-600" : "text-slate-900")}>
-                                  {formatCurrency(priceEntry.price)}
-                                </span>
-                                {isBest && (
-                                  <span className="bg-green-100 text-green-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                                    BEST
-                                  </span>
+                                  <span className="text-slate-400 text-xs">N/A</span>
                                 )}
                               </div>
-                            ) : (
-                              <span className="text-slate-400 text-xs">N/A</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-8 md:p-20 text-center shadow-xl shadow-slate-200/50">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-transparent" />
+              <div className="relative z-10 flex flex-col items-center max-w-md mx-auto">
+                <div className="w-20 h-20 bg-primary/5 rounded-3xl flex items-center justify-center mb-8 border border-primary/10">
+                  <Lock className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-4">Login to view comparison results</h3>
+                <p className="text-slate-500 leading-relaxed mb-10">
+                  Join thousand of Namibians today. Get access to detailed price comparisons, total cart estimates, and savings across all major retailers.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 w-full">
+                  <Button
+                    onClick={() => router.push("/login")}
+                    className="rounded-2xl h-14 px-8 font-bold bg-primary hover:bg-primary/90 text-white flex-1 text-base shadow-lg shadow-primary/20"
+                  >
+                    Sign In
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push("/register")}
+                    className="rounded-2xl h-14 px-8 font-bold border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex-1 text-base"
+                  >
+                    Create Account
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 
