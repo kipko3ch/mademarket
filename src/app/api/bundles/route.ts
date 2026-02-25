@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { bundles, vendors, branches, bundleProducts, bundleImages, products } from "@/db/schema";
-import { eq, and, isNotNull } from "drizzle-orm";
+import { eq, and, isNotNull, sql } from "drizzle-orm";
 
 // GET /api/bundles — Return active bundles with vendor/branch info, products, and images
 export async function GET(request: NextRequest) {
