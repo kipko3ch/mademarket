@@ -88,8 +88,8 @@ export function BrochuresSection() {
                     className="w-full h-full object-cover transition-transform duration-500"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-slate-50">
-                    <FileText className="h-10 w-10 text-slate-300" />
+                  <div className="w-full h-full flex items-center justify-center bg-slate-50 p-12">
+                    <img src="/icons/productplaceholder.png" alt="" className="h-full w-full object-contain opacity-20" />
                   </div>
                 )}
               </div>

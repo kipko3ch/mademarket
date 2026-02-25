@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
+"use client";
+
 import Link from "next/link";
-// No icons used in the simplified brand section currently
+import { useSession } from "next-auth/react";
 
 const platformLinks = [
   { href: "/about", label: "About MaDe Market" },
@@ -24,13 +26,10 @@ const categories = [
   { href: "/products?category=household", label: "Household Essentials" },
 ];
 
-const partnerLinks = [
-  { href: "/login", label: "Merchant Dashboard" },
-  { href: "/dashboard/register-store", label: "List Your Business" },
-  { href: "/terms", label: "Terms of Service" },
-];
-
 export function Footer() {
+  const { data: session } = useSession();
+  const isMerchant = session?.user?.role === "vendor" || session?.user?.role === "admin";
+
   return (
     <footer className="bg-white border-t border-slate-100 pt-12 sm:pt-20 pb-8 sm:pb-12">
       <div className="max-w-7xl mx-auto px-4 md:px-10">
@@ -45,7 +44,7 @@ export function Footer() {
               />
             </Link>
             <p className="text-slate-500 text-sm leading-relaxed max-w-sm">
-              We help you find the lowest grocery price across retailers.
+              We help you find the lowest grocery price across retailers. Saving Namibians money, one shop at a time.
             </p>
           </div>
 
@@ -88,13 +87,30 @@ export function Footer() {
                   </Link>
                 </li>
               ))}
-              {partnerLinks.map((link) => (
-                <li key={link.label}>
-                  <Link href={link.href} className="hover:text-primary transition-colors">
-                    {link.label}
+
+              {/* Partner Links */}
+              {isMerchant && (
+                <li>
+                  <Link href="/dashboard" className="hover:text-primary transition-colors font-semibold text-primary/80">
+                    Merchant Dashboard
                   </Link>
                 </li>
-              ))}
+              )}
+              <li>
+                <a
+                  href="https://wa.me/264818222368"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary transition-colors"
+                >
+                  List Your Business
+                </a>
+              </li>
+              <li>
+                <Link href="/terms" className="hover:text-primary transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

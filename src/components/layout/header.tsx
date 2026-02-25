@@ -20,7 +20,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose 
 import { useCart } from "@/hooks/use-cart";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import { cn, productUrl } from "@/lib/utils";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -130,48 +130,68 @@ export function Header() {
                 className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-full text-sm focus:ring-2 focus:ring-primary outline-none"
               />
 
-              {/* Mobile Results Popover - Fixed Overlay */}
+              {/* Mobile Results Popover - Improved Visibility */}
               {showResults && searchQuery.length >= 2 && (
-                <div className="fixed top-14 left-0 right-0 bottom-14 bg-white z-[80] scrollbar-hide overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="fixed inset-0 top-14 bg-white z-[100] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-300 pb-20">
                   {isSearching ? (
-                    <div className="p-8 text-center">
-                      <Loader2 className="h-6 w-6 text-primary animate-spin mx-auto mb-2" />
-                      <p className="text-xs text-slate-400 font-medium">Hunting for deals...</p>
+                    <div className="p-12 text-center">
+                      <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto mb-3" />
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Searching MaDe Market...</p>
                     </div>
                   ) : searchResults.length > 0 ? (
-                    <div className="p-2">
+                    <div className="p-3">
+                      <div className="px-3 py-2 mb-1">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Matches for &quot;{searchQuery}&quot;</p>
+                      </div>
                       {searchResults.map((p) => (
                         <Link
                           key={p.id}
-                          href={`/product/${p.id}`}
+                          href={productUrl(p.id, p.name)}
                           onClick={() => {
                             setMobileSearchOpen(false);
                             setShowResults(false);
+                            setSearchQuery("");
                           }}
-                          className="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors group"
+                          className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-2xl transition-all group border border-transparent active:scale-[0.98]"
                         >
-                          <div className="h-12 w-12 rounded-lg bg-white border border-slate-100 p-1 flex items-center justify-center shrink-0">
-                            <img src={p.imageUrl} alt="" className="h-full w-full object-contain" />
+                          <div className="h-16 w-16 rounded-xl bg-white border border-slate-100 p-2 flex items-center justify-center shrink-0 shadow-sm">
+                            {p.imageUrl && p.imageUrl.trim() !== "" ? (
+                              <img src={p.imageUrl} alt="" className="h-full w-full object-contain" />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center bg-slate-50 rounded-lg">
+                                <ShoppingBag className="h-5 w-5 text-slate-200" />
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-slate-900 truncate group-hover:text-primary transition-colors">{p.name}</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">From {formatCurrency(p.minPrice)}</p>
+                            <p className="text-sm font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-primary transition-colors">{p.name}</p>
+                            <p className="text-[10px] text-primary font-black uppercase tracking-widest mt-1">From {formatCurrency(p.minPrice)}</p>
                           </div>
-                          <ChevronDown className="h-4 w-4 text-slate-300 -rotate-90" />
+                          <div className="h-8 w-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-300">
+                            <ArrowRight className="h-4 w-4" />
+                          </div>
                         </Link>
                       ))}
                       <button
                         onClick={handleSearch}
-                        className="w-full p-3 text-center text-xs font-black text-primary hover:bg-primary/5 rounded-xl transition-colors uppercase tracking-widest mt-1 border-t border-slate-50"
+                        className="w-full mt-4 p-4 text-center bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-lg shadow-slate-900/10 active:scale-95 transition-all"
                       >
-                        View all results for &quot;{searchQuery}&quot;
+                        See All &quot;{searchQuery}&quot; Results
                       </button>
                     </div>
                   ) : (
-                    <div className="p-10 text-center">
-                      <ShoppingBag className="h-8 w-8 text-slate-200 mx-auto mb-3" />
-                      <p className="text-sm font-bold text-slate-900">No matches found</p>
-                      <p className="text-xs text-slate-400 mt-1">Try searching for a category or brand</p>
+                    <div className="p-20 text-center">
+                      <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <ShoppingBag className="h-10 w-10 text-slate-200" />
+                      </div>
+                      <p className="text-base font-bold text-slate-900">No results found</p>
+                      <p className="text-xs text-slate-400 mt-2 leading-relaxed px-10">We couldn&apos;t find anything matching &quot;{searchQuery}&quot;. Try generic terms like &quot;Milk&quot; or &quot;SPAR&quot;.</p>
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="mt-6 text-xs font-bold text-primary hover:underline uppercase tracking-widest"
+                      >
+                        Clear Search
+                      </button>
                     </div>
                   )}
                 </div>
@@ -240,12 +260,18 @@ export function Header() {
                   {searchResults.map((p) => (
                     <Link
                       key={p.id}
-                      href={`/product/${p.id}`}
+                      href={productUrl(p.id, p.name)}
                       onClick={() => setShowResults(false)}
                       className="flex items-center gap-3 p-2.5 hover:bg-slate-50 rounded-xl transition-colors group"
                     >
                       <div className="h-10 w-10 rounded-lg bg-white border border-slate-100 p-1 flex items-center justify-center shrink-0">
-                        <img src={p.imageUrl} alt="" className="h-full w-full object-contain" />
+                        {p.imageUrl && p.imageUrl.trim() !== "" ? (
+                          <img src={p.imageUrl} alt="" className="h-full w-full object-contain" />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center bg-slate-50 rounded-md">
+                            <ShoppingBag className="h-4 w-4 text-slate-200" />
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-slate-900 truncate group-hover:text-primary transition-colors">{p.name}</p>

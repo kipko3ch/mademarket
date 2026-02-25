@@ -119,8 +119,8 @@ export function BundleCard({ bundle }: { bundle: BundleData }) {
                         )}
                     </div>
                 ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-violet-50 via-primary/5 to-slate-50">
-                        <Package className="h-12 w-12 text-primary/20 animate-pulse" />
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-white">
+                        <img src="/icons/productplaceholder.png" alt="Placeholder" className="h-16 w-16 object-contain opacity-20" />
                     </div>
                 )}
 
@@ -143,7 +143,9 @@ export function BundleCard({ bundle }: { bundle: BundleData }) {
                             <img src={bundle.vendorLogoUrl} alt="" className="h-full w-full object-contain" />
                         </div>
                     ) : (
-                        <Store className="h-4 w-4 text-slate-300" />
+                        <div className="h-6 w-6 rounded-lg overflow-hidden bg-white border border-slate-100 p-0.5 shadow-sm flex items-center justify-center">
+                            <img src="/icons/productplaceholder.png" alt="" className="h-3 w-3 object-contain opacity-40" />
+                        </div>
                     )}
                     <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{bundle.vendorName}</span>
                 </div>

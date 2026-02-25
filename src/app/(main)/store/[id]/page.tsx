@@ -82,24 +82,44 @@ async function getStoreData(id: string) {
     ))
     .orderBy(desc(brochures.createdAt));
 
-  // Fetch bundles
-  const bundleResults = await db
-    .select({
-      id: bundles.id,
-      name: bundles.name,
-      price: bundles.price,
-      description: bundles.description,
-      imageUrl: bundles.imageUrl,
-      active: bundles.active,
-      branchId: bundles.branchId,
-    })
-    .from(bundles)
-    .innerJoin(branches, eq(bundles.branchId, branches.id))
-    .where(and(
-      eq(branches.vendorId, vendor.id),
-      eq(bundles.active, true)
-    ))
-    .orderBy(desc(bundles.createdAt));
+  // Fetch bundles with relations for slideshow
+  const bundleResults = await db.query.bundles.findMany({
+    where: and(
+      eq(bundles.active, true),
+      // We need to join manually or use the findMany with relations
+      // Since it's branch-based, we filter by vendor branches
+    ),
+    with: {
+      bundleImages: true,
+      bundleProducts: {
+        with: {
+          product: true
+        }
+      },
+      branch: {
+        with: {
+          vendor: true
+        }
+      }
+    },
+    orderBy: [desc(bundles.createdAt)],
+  }).then(raw => raw
+    .filter(b => b.branch?.vendorId === vendor.id)
+    .map(b => ({
+      id: b.id,
+      name: b.name,
+      slug: b.slug,
+      price: Number(b.price),
+      description: b.description,
+      imageUrl: b.imageUrl,
+      active: b.active,
+      branchId: b.branchId,
+      vendorName: b.branch?.vendor.name || "",
+      vendorSlug: b.branch?.vendor.slug || "",
+      vendorLogoUrl: b.branch?.vendor.logoUrl || null,
+      bundleImages: b.bundleImages.map(img => img.imageUrl),
+      productImages: b.bundleProducts.map(bp => bp.product.imageUrl).filter(Boolean) as string[],
+    })));
 
   return {
     vendor: { ...vendor, branches: branchesWithProducts, totalProductCount },

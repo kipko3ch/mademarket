@@ -347,8 +347,8 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {standaloneListings.map((listing) => (
                 <Link key={listing.id} href={`/listing/${listing.slug}`} className="group bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-md transition-all">
-                  <div className="h-48 bg-slate-100 flex items-center justify-center">
-                    <ShoppingBag className="h-12 w-12 text-slate-300" />
+                  <div className="h-48 bg-slate-100 flex items-center justify-center p-12">
+                    <img src="/icons/productplaceholder.png" alt="" className="h-full w-full object-contain opacity-20" />
                   </div>
                   <div className="p-4">
                     {listing.categoryName && (

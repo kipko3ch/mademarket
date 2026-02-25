@@ -65,7 +65,7 @@ export function ProductCard({
           onClick={() => { fetch(`/api/products/${id}/click`, { method: "POST" }).catch(() => { }); }}
           className="relative block aspect-square rounded-2xl sm:rounded-3xl overflow-hidden bg-white border border-slate-100 group-hover:border-primary/20 group-hover:shadow-xl group-hover:shadow-primary/5 transition-all duration-500"
         >
-          {imageUrl ? (
+          {imageUrl && imageUrl.trim() !== "" ? (
             <img
               src={imageUrl}
               alt={name}

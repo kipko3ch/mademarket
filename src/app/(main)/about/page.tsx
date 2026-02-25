@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Info, Target, ShieldCheck, ShoppingBag, ArrowRight, Heart } from "lucide-react";
+import { Info, Target, ShieldCheck, ShoppingBag, ArrowRight, Heart, Map, Sparkles, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const metadata = {
@@ -10,123 +10,147 @@ export const metadata = {
 export default function AboutPage() {
     return (
         <div className="flex flex-col min-h-screen">
-            {/* Hero Section */}
-            <section className="relative pt-20 pb-32 overflow-hidden bg-white">
-                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl -z-10" />
-                <div className="container px-4 mx-auto text-center">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-bold mb-8">
-                        <Info className="h-4 w-4" />
-                        <span>Our Journey</span>
+            {/* 🌟 HERO SECTION - More refined */}
+            <section className="relative pt-24 pb-32 overflow-hidden bg-white">
+                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[700px] h-[700px] bg-primary/[0.03] rounded-full blur-[120px] -z-10" />
+                <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-blue-500/[0.02] rounded-full blur-[100px] -z-10" />
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 text-center">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-8">
+                        <img src="/icons/trending.png" alt="" className="h-3.5 w-3.5" />
+                        <span>The Shopping Revolution</span>
                     </div>
-                    <h1 className="font-heading text-4xl md:text-6xl text-slate-900 mb-6 leading-tight">
-                        Saving Namibians <span className="highlighter">Money</span> <br />
-                        Every Single Day
+
+                    <h1 className="font-heading text-4xl md:text-7xl text-slate-900 mb-8 leading-[1.1] md:-tracking-tight max-w-4xl mx-auto">
+                        We help Namibians <span className="highlighter text-red-600">save</span> their hard-earned money.
                     </h1>
-                    <p className="max-w-2xl mx-auto text-lg text-slate-600 mb-10">
-                        MaDe Market was born from a simple observation: grocery prices in Namibia vary significantly between stores, and families were spending more than they needed to.
+
+                    <p className="max-w-2xl mx-auto text-lg text-slate-500 mb-12 leading-relaxed">
+                        MaDe Market was born from a simple mission: to fight the rising cost of living by providing every Namibian household with the tools to find the best deals, instantly.
                     </p>
+
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Button asChild size="lg" className="rounded-2xl h-14 px-8 text-white">
+                        <Button asChild size="lg" className="rounded-2xl h-16 px-10 text-white bg-primary shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all font-bold">
                             <Link href="/products">
-                                Start Saving Now
+                                Start Comparing
                                 <ArrowRight className="ml-2 h-5 w-5" />
                             </Link>
                         </Button>
-                        <Button variant="outline" size="lg" className="rounded-2xl h-14 px-8">
-                            <Link href="/contact">Contact Support</Link>
+                        <Button variant="ghost" size="lg" className="rounded-2xl h-16 px-10 font-bold text-slate-600 hover:bg-slate-50">
+                            <Link href="/contact">Support Center</Link>
                         </Button>
                     </div>
                 </div>
             </section>
 
-            {/* Mission Section */}
-            <section className="py-24 bg-slate-50">
-                <div className="container px-4 mx-auto">
+            {/* 🛡️ CORE VALUES SECTION - Minimalist & Professional */}
+            <section className="py-24 bg-white relative">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
-                                <Target className="h-8 w-8" />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-4">Our Mission</h3>
-                            <p className="text-slate-500 leading-relaxed">
-                                To provide transparency in the Namibian retail market, empowering consumers with real-time price data to make smarter purchasing decisions.
+                        {/* Our Mission */}
+                        <div className="group relative pt-8 border-t-2 border-slate-100 hover:border-primary transition-colors duration-500">
+                            <span className="text-[10px] font-black text-primary/40 uppercase tracking-[0.3em] mb-4 block">01 / Mission</span>
+                            <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">Our Mission</h3>
+                            <p className="text-slate-500 leading-relaxed text-sm md:text-base">
+                                To bring radical transparency to the Namibian retail market. We empower you with real-time data, ensuring you never overpay for basic necessities again.
                             </p>
                         </div>
 
-                        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="w-14 h-14 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mb-6">
-                                <ShieldCheck className="h-8 w-8" />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-4">100% Independent</h3>
-                            <p className="text-slate-500 leading-relaxed">
-                                We are not owned by any retailer. Our comparisons are fair, unbiased, and focused solely on providing the best value for you.
+                        {/* 100% Independent */}
+                        <div className="group relative pt-8 border-t-2 border-slate-100 hover:border-green-500 transition-colors duration-500">
+                            <span className="text-[10px] font-black text-green-500/40 uppercase tracking-[0.3em] mb-4 block">02 / Integrity</span>
+                            <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">100% Independent</h3>
+                            <p className="text-slate-500 leading-relaxed text-sm md:text-base">
+                                We aren&apos;t owned by any retailer. Our data is unbiased, our comparisons are fair, and our loyalty remains solely with the consumer.
                             </p>
                         </div>
 
-                        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mb-6">
-                                <Heart className="h-8 w-8" />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-4">Built for Namibia</h3>
-                            <p className="text-slate-500 leading-relaxed">
-                                From Windhoek to Walvis Bay, we track the stores you shop at every day: Shoprite, Checkers, SPAR, OK Foods, and more.
+                        {/* Built for Namibia */}
+                        <div className="group relative pt-8 border-t-2 border-slate-100 hover:border-red-500 transition-colors duration-500">
+                            <span className="text-[10px] font-black text-red-500/40 uppercase tracking-[0.2em] mb-4 block">03 / Community</span>
+                            <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">Built for Namibia</h3>
+                            <p className="text-slate-500 leading-relaxed text-sm md:text-base">
+                                From the streets of Windhoek to the corners of Katima Mulilo. We track the local stores you shop at: Shoprite, Checkers, SPAR, and your favorite local vendors.
                             </p>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Trust Section */}
-            <section className="py-24 bg-white">
-                <div className="container px-4 mx-auto">
-                    <div className="max-w-4xl mx-auto text-center mb-16">
-                        <h2 className="font-heading text-3xl md:text-5xl text-slate-900 mb-6">Why Trust Us?</h2>
-                        <p className="text-slate-500 text-lg">
-                            We use advanced data collection technology to verify thousands of prices daily across multiple Namibian towns.
-                        </p>
-                    </div>
+            {/* ✨ WHY TRUST US SECTION */}
+            <section className="py-32 bg-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10">
+                    <div className="flex flex-col lg:flex-row gap-16 items-center">
+                        <div className="lg:w-1/2 space-y-8">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-50 text-slate-400 text-[10px] font-bold uppercase tracking-widest rounded-lg">
+                                Verified Data
+                            </div>
+                            <h2 className="font-heading text-3xl md:text-5xl text-slate-900 leading-[1.1]">
+                                Accuracy you can <span className="text-primary italic">trust</span>.
+                            </h2>
+                            <p className="text-lg text-slate-500 leading-relaxed max-w-xl">
+                                We combine automated verification with a dedicated data team to ensure every price shown is as accurate as what you see on the shelf.
+                            </p>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="flex gap-6 p-8 bg-slate-50 rounded-3xl">
-                            <div className="shrink-0 w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary">
-                                <ShoppingBag className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-slate-900 mb-2">Verified Prices</h4>
-                                <p className="text-slate-500 text-sm">
-                                    Our team and automated systems double-check price entries to ensure the data you see is accurate and up-to-date.
-                                </p>
-                            </div>
+                            <ul className="space-y-4 pt-4">
+                                {[
+                                    "Daily price verification across 10+ regions",
+                                    "Real-time alerts for price drops & specials",
+                                    "No hidden fees or sponsored price manipulation",
+                                ].map((item, i) => (
+                                    <li key={i} className="flex items-center gap-3 text-slate-700 font-bold">
+                                        <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
+                                            <img src="/icons/compare.png" alt="" className="h-3 w-3 brightness-[10] invert" />
+                                        </div>
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
 
-                        <div className="flex gap-6 p-8 bg-slate-50 rounded-3xl">
-                            <div className="shrink-0 w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary">
-                                <ShieldCheck className="h-6 w-6" />
+                        <div className="lg:w-1/2 relative">
+                            <div className="aspect-square bg-slate-900 rounded-[4rem] relative overflow-hidden shadow-2xl">
+                                <img
+                                    src="/images/namibia.svg"
+                                    alt="Namibia"
+                                    className="w-full h-full object-cover opacity-20 scale-110"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center p-12 text-center">
+                                    <div className="space-y-6">
+                                        <div className="w-20 h-20 bg-primary/20 rounded-3xl mx-auto flex items-center justify-center shadow-2xl overflow-hidden p-4 group">
+                                            <img src="/icons/productplaceholder.png" alt="" className="h-full w-full object-contain opacity-60 group-hover:scale-110 transition-transform" />
+                                        </div>
+                                        <p className="text-primary font-black text-5xl tracking-tighter shrink-0">10,000+</p>
+                                        <p className="text-white/60 text-sm font-bold uppercase tracking-[0.2em]">Products Tracked Daily</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <h4 className="font-bold text-slate-900 mb-2">Consumer Advocacy</h4>
-                                <p className="text-slate-500 text-sm">
-                                    We believe that price transparency leads to healthier competition and lower prices for all Namibians.
-                                </p>
-                            </div>
+                            {/* Decorative elements */}
+                            <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-primary rounded-full blur-3xl opacity-20" />
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* CTA Section */}
-            <section className="py-24">
-                <div className="container px-4 mx-auto">
-                    <div className="bg-primary rounded-[3rem] p-12 md:p-20 text-center text-white relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
-                        <div className="relative z-10">
-                            <h2 className="font-heading text-3xl md:text-5xl mb-8">Ready to join the smart shopping movement?</h2>
-                            <p className="text-primary-foreground/80 text-lg mb-12 max-w-2xl mx-auto">
-                                Create a free account to track prices, receive alerts for specials, and save your shopping lists.
+            {/* 🚀 CALL TO ACTION */}
+            <section className="py-24 px-4 sm:px-0">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10">
+                    <div className="bg-slate-900 rounded-[4rem] p-12 md:p-24 text-center text-white relative overflow-hidden ring-1 ring-white/10">
+                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/20 via-transparent to-transparent opacity-50" />
+
+                        <div className="relative z-10 max-w-3xl mx-auto">
+                            <h2 className="font-heading text-4xl md:text-6xl mb-8 leading-tight">Join the smart shopping movement.</h2>
+                            <p className="text-slate-400 text-lg md:text-xl mb-12 leading-relaxed">
+                                Join thousands of Namibians who are already saving hundreds of dollars every week. It takes less than 60 seconds to set up.
                             </p>
-                            <Button asChild size="lg" variant="secondary" className="rounded-2xl h-16 px-10 text-primary font-bold shadow-xl">
-                                <Link href="/auth/register">Create Free Account</Link>
-                            </Button>
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                <Button asChild size="lg" className="rounded-2xl h-16 px-12 bg-white text-slate-900 hover:bg-slate-100 font-black shadow-2xl">
+                                    <Link href="/register">Create Free Account</Link>
+                                </Button>
+                                <Button asChild variant="ghost" size="lg" className="rounded-2xl h-16 px-10 text-white hover:bg-white/10 font-bold border border-white/10">
+                                    <Link href="/products">Browse Deals First</Link>
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>

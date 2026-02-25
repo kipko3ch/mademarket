@@ -193,7 +193,7 @@ export function StoreDetailClient({
                         </div>
                     ) : (
                         <div className="py-20 text-center bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
-                            <Package className="h-16 w-16 text-slate-200 mx-auto mb-4" />
+                            <img src="/icons/productplaceholder.png" alt="" className="h-16 w-16 opacity-20 mx-auto mb-4" />
                             <h3 className="text-lg font-bold text-slate-900">No products found</h3>
                             <p className="text-sm text-slate-500 mt-1 max-w-xs mx-auto">
                                 We couldn&apos;t find any products in this store that match your search. Try different keywords.
@@ -208,8 +208,8 @@ export function StoreDetailClient({
                         <section className="mb-12">
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 flex items-center justify-center bg-amber-50 rounded-2xl">
-                                        <img src="/icons/bundle.png" alt="Bundles" className="h-6 w-6 object-contain" />
+                                    <div className="h-10 w-10 flex items-center justify-center bg-amber-50 rounded-2xl overflow-hidden p-1.5">
+                                        <img src="/icons/productplaceholder.png" alt="Bundles" className="h-full w-full object-contain opacity-60" />
                                     </div>
                                     <div>
                                         <h2 className="font-heading text-xl md:text-2xl text-slate-900 font-bold">Store Bundles</h2>
@@ -248,8 +248,8 @@ export function StoreDetailClient({
                                             {b.thumbnailImageUrl || b.bannerImageUrl ? (
                                                 <img src={b.thumbnailImageUrl || b.bannerImageUrl!} alt={b.title} className="w-full h-full object-cover transition-transform duration-500" />
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-slate-50">
-                                                    <FileText className="h-10 w-10 text-slate-300" />
+                                                <div className="w-full h-full flex items-center justify-center bg-slate-50 p-12">
+                                                    <img src="/icons/productplaceholder.png" alt="" className="h-full w-full object-contain opacity-20" />
                                                 </div>
                                             )}
                                         </div>

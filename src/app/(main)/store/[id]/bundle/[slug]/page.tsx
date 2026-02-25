@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { Package, Loader2, ArrowLeft, MessageCircle, Globe, ShoppingCart, FileText, CheckCircle2, ChevronRight, Store, ArrowRight, Tag } from "lucide-react";
+import { Package, Loader2, ArrowLeft, MessageCircle, Globe, ShoppingCart, FileText, CheckCircle2, ChevronRight, Store, ArrowRight, Tag, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BundleCard, type BundleData } from "@/components/products/bundle-card";
@@ -149,8 +149,8 @@ export default function BundleDetailPage({
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
-          <div className="h-24 w-24 rounded-3xl bg-white shadow-xl flex items-center justify-center mx-auto mb-6">
-            <Package className="h-10 w-10 text-slate-300" />
+          <div className="h-24 w-24 rounded-3xl bg-white shadow-xl flex items-center justify-center mx-auto mb-6 overflow-hidden p-4">
+            <img src="/icons/productplaceholder.png" alt="" className="h-full w-full object-contain opacity-20" />
           </div>
           <h1 className="text-2xl font-black text-slate-900 mb-2 whitespace-nowrap">Deal Not Found</h1>
           <p className="text-slate-500 text-sm mb-8 leading-relaxed">
@@ -183,15 +183,25 @@ export default function BundleDetailPage({
       {/* Dynamic Header / Breadcrumb Area */}
       <div className="bg-slate-50/50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link
-            href={`/store/${id}`}
-            className="group flex items-center gap-2.5 text-xs font-black text-slate-400 uppercase tracking-widest hover:text-primary transition-colors"
-          >
-            <div className="h-8 w-8 rounded-full flex items-center justify-center bg-white border border-slate-200 group-hover:bg-primary group-hover:text-white transition-all">
-              <ArrowLeft className="h-4 w-4" />
-            </div>
-            <span>Store Profile</span>
-          </Link>
+          <div className="flex items-center gap-3 sm:gap-6">
+            <Link
+              href="/"
+              className="group flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-primary transition-all uppercase tracking-[0.2em]"
+            >
+              <div className="h-8 w-8 rounded-full flex items-center justify-center bg-white border border-slate-200 group-hover:bg-primary group-hover:text-white transition-all">
+                <Home className="h-3.5 w-3.5" />
+              </div>
+              <span className="hidden sm:inline">Home</span>
+            </Link>
+            <div className="h-4 w-px bg-slate-200" />
+            <Link
+              href={`/store/${id}`}
+              className="group flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-primary transition-all uppercase tracking-[0.2em]"
+            >
+              <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-1 transition-transform" />
+              Store Profile
+            </Link>
+          </div>
 
           <div className="hidden sm:flex items-center gap-2">
             <Badge variant="outline" className="rounded-md border-slate-200 text-slate-500 text-[10px] font-bold py-1">
@@ -220,14 +230,14 @@ export default function BundleDetailPage({
                     className="w-full h-full object-contain p-10 group-hover:scale-105 transition-transform duration-1000"
                   />
                   <div className="absolute top-8 right-8">
-                    <div className="bg-white/90 backdrop-blur-md border border-white h-12 w-12 rounded-2xl flex items-center justify-center shadow-xl">
-                      <Package className="h-6 w-6 text-primary" />
+                    <div className="bg-white/90 backdrop-blur-md border border-white h-12 w-12 rounded-2xl flex items-center justify-center shadow-xl overflow-hidden p-2">
+                      <img src="/icons/productplaceholder.png" alt="" className="h-full w-full object-contain opacity-40" />
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-full">
-                  <Package className="h-24 w-24 text-slate-200 animate-pulse" />
+                  <img src="/icons/productplaceholder.png" alt="" className="h-40 w-40 object-contain opacity-10" />
                 </div>
               )}
 
@@ -318,7 +328,7 @@ export default function BundleDetailPage({
                       <div className="h-12 w-12 rounded-xl bg-white border border-slate-100 p-1 flex items-center justify-center overflow-hidden shrink-0">
                         {bp.productImage ? (
                           <img src={bp.productImage} alt={bp.productName} className="h-full w-full object-contain" />
-                        ) : <Package className="h-6 w-6 text-slate-200" />}
+                        ) : <img src="/icons/productplaceholder.png" alt="" className="h-6 w-6 object-contain opacity-20" />}
                       </div>
                       <div className="flex-1">
                         <h4 className="font-bold text-slate-800 text-sm line-clamp-1">{bp.productName}</h4>
@@ -395,39 +405,63 @@ export default function BundleDetailPage({
             </section>
           )}
 
-          {/* More Brochures */}
+          {/* More Brochures - Refined & Clean */}
           {relatedBrochures.length > 0 && (
-            <section className="bg-slate-900 rounded-[3rem] p-8 sm:p-12 text-white relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full -mr-32 -mt-32 blur-[100px]" />
-              <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-                <div className="max-w-xl">
-                  <h2 className="text-3xl sm:text-4xl font-black mb-4">Store <span className="text-primary">Catalogues</span></h2>
-                  <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+            <section className="bg-white rounded-[3rem] border border-slate-100 p-8 sm:p-12 relative overflow-hidden">
+              <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-12">
+                <div className="flex-1">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-lg mb-4">
+                    Digital Leaflets
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4 tracking-tight">
+                    Store <span className="highlighter text-red-600">Catalogues</span>
+                  </h2>
+                  <p className="text-slate-500 text-sm sm:text-base leading-relaxed max-w-lg mb-8">
                     Flip through the latest weekly leaflets and digital brochures to find even more hidden gems and grocery deals.
                   </p>
-                  <div className="mt-8 flex flex-wrap gap-4">
+
+                  <div className="flex flex-wrap gap-4 sm:gap-6">
                     {relatedBrochures.map((rb) => (
                       <Link
                         key={rb.id}
                         href={`/store/${id}/brochure/${rb.slug}`}
-                        className="bg-white/10 backdrop-blur-xl border border-white/10 p-2 sm:p-3 rounded-2xl hover:bg-white/20 transition-all group shrink-0"
+                        className="group flex flex-col w-[140px] sm:w-[180px] shrink-0"
                       >
-                        <div className="h-32 sm:h-40 aspect-[3/4] rounded-xl overflow-hidden mb-3 bg-white/5">
+                        <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 mb-3 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-primary/5 group-hover:border-primary/20">
                           {rb.thumbnailImageUrl ? (
-                            <img src={rb.thumbnailImageUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                          ) : <FileText className="h-10 w-10 m-auto text-white/20" />}
+                            <img src={rb.thumbnailImageUrl} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <FileText className="h-8 w-8 text-slate-200" />
+                            </div>
+                          )}
                         </div>
-                        <p className="text-xs font-bold text-center text-white truncate max-w-[120px]">{rb.title}</p>
+                        <p className="text-xs font-bold text-slate-900 truncate group-hover:text-primary transition-colors">{rb.title}</p>
+                        {rb.validUntil && (
+                          <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                            Valid until {new Date(rb.validUntil).toLocaleDateString("en-NA", { month: "short", day: "numeric" })}
+                          </p>
+                        )}
                       </Link>
                     ))}
                   </div>
                 </div>
 
-                <Link href={`/store/${id}`} className="group relative h-48 w-full md:w-64 bg-primary rounded-[2rem] flex flex-col items-center justify-center p-8 overflow-hidden active:scale-95 transition-all">
-                  <div className="absolute inset-0 bg-black/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-                  <Store className="h-12 w-12 text-white mb-4 relative" />
-                  <span className="text-sm font-black text-white uppercase tracking-widest text-center relative">Visit Full Store Profile</span>
-                </Link>
+                <div className="lg:w-72 shrink-0">
+                  <Link
+                    href={`/store/${id}`}
+                    className="flex flex-col items-center justify-center p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 hover:bg-primary/5 hover:border-primary/20 transition-all group group/btn text-center"
+                  >
+                    <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4 group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                      <Store className="h-6 w-6 text-slate-400 group-hover:text-white" />
+                    </div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 group-hover:text-primary transition-colors">Retailer Profile</p>
+                    <h4 className="font-bold text-slate-900 group-hover:text-primary transition-colors">Visit {bundle.storeName}</h4>
+                    <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-primary opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all">
+                      View All Specials <ArrowRight className="h-3 w-3" />
+                    </div>
+                  </Link>
+                </div>
               </div>
             </section>
           )}
