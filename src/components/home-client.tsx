@@ -466,9 +466,9 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
 
         {/* Hero Content */}
         <div className="relative z-10 max-w-2xl w-full">
-          <h2 className="font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl text-white leading-[1.1] mb-3 sm:mb-4 md:mb-6">
+          <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl text-white leading-[1.1] mb-3 sm:mb-4 md:mb-6">
             {b.title}
-          </h2>
+          </h1>
 
           {b.subtitle && (
             <p className="text-sm sm:text-base md:text-lg text-white/70 mb-5 sm:mb-6 md:mb-8 max-w-md leading-relaxed">
