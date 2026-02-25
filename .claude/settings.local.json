@@ -7,7 +7,13 @@
       "Bash(set:*)",
       "Bash(source .env.local)",
       "Bash(set +a)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(/c/Users/KIPKOECH/Desktop/project/made-market/src/app/api/admin/categories/route.ts:*)",
+      "Bash(/c/Users/KIPKOECH/Desktop/project/made-market/src/app/api/standalone/route.ts:*)",
+      "Bash(\"c:/Users/KIPKOECH/Desktop/project/made-market/server.js\":*)"
     ]
   }
 }
