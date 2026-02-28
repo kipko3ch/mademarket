@@ -23,6 +23,7 @@ export async function PATCH(
     slug?: string;
     active?: boolean;
     sortOrder?: number;
+    imageUrl?: string;
   };
 
   try {
@@ -46,12 +47,14 @@ export async function PATCH(
     slug: string;
     active: boolean;
     sortOrder: number;
+    imageUrl: string | null;
   }> = {};
 
   if (body.name !== undefined) updates.name = body.name;
   if (body.slug !== undefined) updates.slug = body.slug;
   if (body.active !== undefined) updates.active = body.active;
   if (body.sortOrder !== undefined) updates.sortOrder = body.sortOrder;
+  if (body.imageUrl !== undefined) updates.imageUrl = body.imageUrl || null;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
