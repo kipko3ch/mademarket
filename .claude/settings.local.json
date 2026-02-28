@@ -13,7 +13,9 @@
       "Bash(git push)",
       "Bash(/c/Users/KIPKOECH/Desktop/project/made-market/src/app/api/admin/categories/route.ts:*)",
       "Bash(/c/Users/KIPKOECH/Desktop/project/made-market/src/app/api/standalone/route.ts:*)",
-      "Bash(\"c:/Users/KIPKOECH/Desktop/project/made-market/server.js\":*)"
+      "Bash(\"c:/Users/KIPKOECH/Desktop/project/made-market/server.js\":*)",
+      "Bash(git checkout --theirs package.json src/app/\\\\\\(main\\\\\\)/listing/[slug]/page.tsx src/app/\\\\\\(main\\\\\\)/store/[id]/page.tsx src/app/admin/analytics/page.tsx src/app/admin/categories/page.tsx src/app/admin/standalone/page.tsx src/app/api/admin/standalone/[id]/route.ts src/app/api/admin/standalone/route.ts src/app/api/standalone/[slug]/route.ts src/app/api/standalone/route.ts src/components/home-client.tsx src/components/layout/admin-sidebar.tsx src/components/ui/switch.tsx src/components/ui/textarea.tsx src/db/migrations/meta/0000_snapshot.json src/db/migrations/meta/_journal.json src/db/schema.ts)",
+      "Bash(git rebase --continue)"
     ]
   }
 }

@@ -34,12 +34,15 @@ export async function GET(
         id: branches.id,
         branchName: branches.branchName,
         slug: branches.slug,
+        city: branches.city,
+        area: branches.area,
         town: branches.town,
         region: branches.region,
         address: branches.address,
         latitude: branches.latitude,
         longitude: branches.longitude,
         whatsappNumber: branches.whatsappNumber,
+        logoUrl: branches.logoUrl,
         approved: branches.approved,
         active: branches.active,
         showInMarquee: branches.showInMarquee,
@@ -95,8 +98,16 @@ export async function PATCH(
     if ("branchName" in body && typeof body.branchName === "string" && body.branchName.trim()) {
       updateData.branchName = body.branchName.trim();
     }
-    if ("town" in body) {
+    if ("city" in body) {
+      updateData.city = body.city || null;
+      updateData.town = body.city || null; // legacy sync
+    }
+    if ("area" in body) {
+      updateData.area = body.area || null;
+    }
+    if ("town" in body && !("city" in body)) {
       updateData.town = body.town || null;
+      updateData.city = body.town || null; // sync to new field
     }
     if ("region" in body) {
       updateData.region = body.region || null;
@@ -112,6 +123,9 @@ export async function PATCH(
     }
     if ("whatsappNumber" in body) {
       updateData.whatsappNumber = body.whatsappNumber || null;
+    }
+    if ("logoUrl" in body) {
+      updateData.logoUrl = body.logoUrl || null;
     }
 
     if (Object.keys(updateData).length === 0) {

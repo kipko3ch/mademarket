@@ -74,12 +74,15 @@ export const branches = pgTable(
       .references(() => vendors.id, { onDelete: "cascade" }),
     branchName: text("branch_name").notNull(),
     slug: text("slug").notNull(),
-    town: text("town"),
-    region: text("region"),
+    city: text("city"),            // e.g. "Windhoek" — replaces town
+    area: text("area"),            // e.g. "Otjomuise", "Katutura" — replaces region
+    town: text("town"),            // legacy fallback (= city)
+    region: text("region"),        // legacy fallback (kept for old data)
     address: text("address"),
     latitude: text("latitude"),
     longitude: text("longitude"),
     whatsappNumber: text("whatsapp_number"),
+    logoUrl: text("logo_url"),          // branch-specific logo (overrides vendor logo)
     approved: boolean("approved").notNull().default(false),
     active: boolean("active").notNull().default(true),
     showInMarquee: boolean("show_in_marquee").notNull().default(false),
@@ -90,6 +93,8 @@ export const branches = pgTable(
     index("idx_branches_vendor").on(table.vendorId),
     index("idx_branches_region").on(table.region),
     index("idx_branches_town").on(table.town),
+    index("idx_branches_city").on(table.city),
+    index("idx_branches_area").on(table.area),
     uniqueIndex("idx_branches_vendor_slug").on(table.vendorId, table.slug),
   ]
 );
@@ -140,8 +145,8 @@ export const categories = pgTable("categories", {
   name: text("name").notNull().unique(),
   slug: text("slug").notNull().unique(),
   imageUrl: text("image_url"),
-  sortOrder: integer("sort_order").notNull().default(0),
-  active: boolean("active").notNull().default(true),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  active: boolean("active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -626,5 +631,30 @@ export const standaloneListingImagesRelations = relations(standaloneListingImage
   listing: one(standaloneListings, {
     fields: [standaloneListingImages.listingId],
     references: [standaloneListings.id],
+  }),
+}));
+
+// ─── Vendor Reports (Admin-uploaded) ─────────────────────────────────────────
+
+export const vendorReports = pgTable(
+  "vendor_reports",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vendorId: uuid("vendor_id")
+      .notNull()
+      .references(() => vendors.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    fileUrl: text("file_url").notNull(),
+    uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_vendor_reports_vendor").on(table.vendorId),
+  ]
+);
+
+export const vendorReportsRelations = relations(vendorReports, ({ one }) => ({
+  vendor: one(vendors, {
+    fields: [vendorReports.vendorId],
+    references: [vendors.id],
   }),
 }));

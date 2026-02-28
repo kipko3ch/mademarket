@@ -15,6 +15,9 @@ import type {
   bundleProducts,
   bundleImages,
   brochures,
+  standaloneListings,
+  standaloneListingImages,
+  vendorReports,
 } from "@/db/schema";
 
 // ─── Inferred row types ──────────────────────────────────────────────────────
@@ -51,6 +54,9 @@ export type Bundle = typeof bundles.$inferSelect;
 export type BundleProduct = typeof bundleProducts.$inferSelect;
 export type BundleImage = typeof bundleImages.$inferSelect;
 export type Brochure = typeof brochures.$inferSelect;
+export type StandaloneListing = typeof standaloneListings.$inferSelect;
+export type StandaloneListingImage = typeof standaloneListingImages.$inferSelect;
+export type VendorReport = typeof vendorReports.$inferSelect;
 
 // ─── Custom types ────────────────────────────────────────────────────────────
 
@@ -70,6 +76,8 @@ export interface CartBranchBreakdown {
   vendorName: string;
   vendorSlug: string;
   branchSlug: string;
+  city: string | null;
+  area: string | null;
   town: string | null;
   vendorLogoUrl?: string | null;
   vendorWebsiteUrl?: string | null;

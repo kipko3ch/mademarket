@@ -3,12 +3,11 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
-import { ChevronRight, Store, ArrowRight, Diamond, TrendingUp, Package, ShoppingBag, MessageCircle, ExternalLink, Tag } from "lucide-react";
+import { ChevronRight, Store, ArrowRight, Diamond, TrendingUp, Package, Tag, MessageCircle, ExternalLink } from "lucide-react";
 import { ProductCard } from "@/components/products/product-card";
-import { BundleCard, type BundleData } from "@/components/products/bundle-card";
 import { LocationModal } from "@/components/location-modal";
 import { BrochuresSection } from "@/components/brochures-section";
-import { Badge } from "@/components/ui/badge";
+import { BundleCard, type BundleData } from "@/components/products/bundle-card";
 import { useLocation, getRegionForCity } from "@/hooks/use-location";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
@@ -35,6 +34,9 @@ interface StoreData {
   branchSlug: string;
   branchTown: string | null;
   branchRegion: string | null;
+  branchCity: string | null;
+  branchArea: string | null;
+  branchLogoUrl: string | null;
   productCount: number;
 }
 
@@ -55,7 +57,7 @@ interface FeaturedProductData extends ProductData {
   priority: "premium" | "standard";
 }
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// BundleData is imported from @/components/products/bundle-card
 
 interface StandaloneListing {
   id: string;
@@ -113,14 +115,14 @@ const FALLBACK_BANNERS: Banner[] = [
 ];
 
 const FALLBACK_STORES: StoreData[] = [
-  { id: "f1", vendorName: "Shoprite", vendorSlug: "shoprite", vendorLogoUrl: "/images/shoprite.jpeg", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
-  { id: "f2", vendorName: "Checkers", vendorSlug: "checkers", vendorLogoUrl: "/images/checkers.png", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
-  { id: "f3", vendorName: "SPAR", vendorSlug: "spar", vendorLogoUrl: "/images/spar.jpg", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
-  { id: "f4", vendorName: "Choppies", vendorSlug: "choppies", vendorLogoUrl: "/images/choppies.png", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
-  { id: "f5", vendorName: "Food Lover's", vendorSlug: "food-lovers", vendorLogoUrl: "/images/foodloversmarket.png", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
-  { id: "f6", vendorName: "U-Save", vendorSlug: "usave", vendorLogoUrl: "/images/usave.png", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
-  { id: "f7", vendorName: "Woermann Brock", vendorSlug: "wb", vendorLogoUrl: "/images/wb.jpeg", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
-  { id: "f8", vendorName: "Namica", vendorSlug: "namica", vendorLogoUrl: "/images/namica.jpg", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, productCount: 0 },
+  { id: "f1", vendorName: "Shoprite", vendorSlug: "shoprite", vendorLogoUrl: "/images/shoprite.jpeg", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, branchCity: null, branchArea: null, branchLogoUrl: null, productCount: 0 },
+  { id: "f2", vendorName: "Checkers", vendorSlug: "checkers", vendorLogoUrl: "/images/checkers.png", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, branchCity: null, branchArea: null, branchLogoUrl: null, productCount: 0 },
+  { id: "f3", vendorName: "SPAR", vendorSlug: "spar", vendorLogoUrl: "/images/spar.jpg", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, branchCity: null, branchArea: null, branchLogoUrl: null, productCount: 0 },
+  { id: "f4", vendorName: "Choppies", vendorSlug: "choppies", vendorLogoUrl: "/images/choppies.png", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, branchCity: null, branchArea: null, branchLogoUrl: null, productCount: 0 },
+  { id: "f5", vendorName: "Food Lover's", vendorSlug: "food-lovers", vendorLogoUrl: "/images/foodloversmarket.png", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, branchCity: null, branchArea: null, branchLogoUrl: null, productCount: 0 },
+  { id: "f6", vendorName: "U-Save", vendorSlug: "usave", vendorLogoUrl: "/images/usave.png", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, branchCity: null, branchArea: null, branchLogoUrl: null, productCount: 0 },
+  { id: "f7", vendorName: "Woermann Brock", vendorSlug: "wb", vendorLogoUrl: "/images/wb.jpeg", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, branchCity: null, branchArea: null, branchLogoUrl: null, productCount: 0 },
+  { id: "f8", vendorName: "Namica", vendorSlug: "namica", vendorLogoUrl: "/images/namica.jpg", vendorDescription: null, branchName: "Main", branchSlug: "main", branchTown: null, branchRegion: null, branchCity: null, branchArea: null, branchLogoUrl: null, productCount: 0 },
 ];
 
 // Vendor brand colors for the marquee letter icons
@@ -190,7 +192,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
         <section className="mb-8 sm:mb-16">
           <div className="text-center mb-4 sm:mb-8">
             <h3 className="text-primary text-[10px] sm:text-xs md:text-sm uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold">
-              Supported Retailers
+              Supported Branches
             </h3>
           </div>
           <RetailerMarquee stores={displayStores} hasRealStores={hasRealStores} />
@@ -218,7 +220,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
                 <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
               {displayFeatured.map((p) => (
                 <div key={p.id} className="relative">
                   {"priority" in p && (p as FeaturedProductData).priority === "premium" && (
@@ -251,7 +253,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
             </div>
             <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-2 snap-x snap-mandatory scrollbar-hide">
               {recentlyViewed.map((p) => (
-                <div key={p.id} className="w-[150px] sm:w-[180px] shrink-0 snap-start">
+                <div key={p.id} className="w-[200px] sm:w-[240px] shrink-0 snap-start">
                   <ProductCard {...p} storeCount={Number(p.storeCount)} />
                 </div>
               ))}
@@ -279,7 +281,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
             </div>
             <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 snap-x snap-mandatory scrollbar-hide">
               {dealProducts.map((p) => (
-                <div key={p.id} className="w-[170px] sm:w-[200px] shrink-0 snap-start">
+                <div key={p.id} className="w-[220px] sm:w-[260px] shrink-0 snap-start">
                   <ProductCard {...p} storeCount={Number(p.storeCount)} />
                 </div>
               ))}
@@ -315,7 +317,7 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
             </div>
             <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-3 snap-x snap-mandatory scrollbar-hide">
               {popularProducts.map((p) => (
-                <div key={p.id} className="w-[140px] sm:w-[170px] md:w-[190px] shrink-0 snap-start">
+                <div key={p.id} className="w-[180px] sm:w-[220px] md:w-[240px] shrink-0 snap-start">
                   <ProductCard {...p} storeCount={Number(p.storeCount)} />
                 </div>
               ))}
@@ -466,9 +468,9 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
 
         {/* Hero Content */}
         <div className="relative z-10 max-w-2xl w-full">
-          <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl text-white leading-[1.1] mb-3 sm:mb-4 md:mb-6">
+          <h2 className="font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl text-white leading-[1.1] mb-3 sm:mb-4 md:mb-6">
             {b.title}
-          </h1>
+          </h2>
 
           {b.subtitle && (
             <p className="text-sm sm:text-base md:text-lg text-white/70 mb-5 sm:mb-6 md:mb-8 max-w-md leading-relaxed">
@@ -518,20 +520,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
 function BundleCarousel({ bundles }: { bundles: BundleData[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(3);
-
-  // Set visibleCount after mount based on actual window width
-  useEffect(() => {
-    function update() {
-      if (window.innerWidth >= 768) setVisibleCount(3);
-      else if (window.innerWidth >= 640) setVisibleCount(2);
-      else setVisibleCount(1);
-    }
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
+  const visibleCount = typeof window !== "undefined" && window.innerWidth >= 768 ? 3 : typeof window !== "undefined" && window.innerWidth >= 640 ? 2 : 1;
   const totalPages = Math.ceil(bundles.length / visibleCount);
 
   useEffect(() => {
@@ -541,11 +530,6 @@ function BundleCarousel({ bundles }: { bundles: BundleData[] }) {
     }, 4000);
     return () => clearInterval(interval);
   }, [isPaused, totalPages]);
-
-  // Reset index when visibleCount changes to avoid out-of-bounds
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [visibleCount]);
 
   const visibleBundles = bundles.slice(
     activeIndex * visibleCount,
@@ -594,33 +578,26 @@ function BundleCarousel({ bundles }: { bundles: BundleData[] }) {
           <BundleCard key={bundle.id} bundle={bundle} />
         ))}
       </div>
-      {/* Preload all bundle images to avoid loading delays on carousel rotation */}
-      <div className="hidden">
-        {bundles.map((bundle) =>
-          bundle.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={bundle.id} src={bundle.imageUrl} alt="" />
-          ) : null
-        )}
-      </div>
     </section>
   );
 }
 
+// ─── Bundle Card ─────────────────────────────────────────────────────────────
 
+// BundleCard is now imported from @/components/products/bundle-card
 
 // ─── Retailer Marquee ───────────────────────────────────────────────────────
 
 function RetailerMarquee({ stores, hasRealStores }: { stores: StoreData[]; hasRealStores: boolean }) {
-  // De-duplicate by vendor slug so each vendor appears once in the marquee
-  const unique = Array.from(new Map(stores.map(s => [s.vendorSlug, s])).values());
+  // Show each branch individually — location is the identity
+  const items = stores;
   // Repeat enough times so the marquee never shows a visible gap/restart
-  const repeatCount = unique.length <= 4 ? 4 : unique.length <= 8 ? 3 : 2;
-  const doubled = Array.from({ length: repeatCount }, () => unique).flat();
+  const repeatCount = items.length <= 4 ? 4 : items.length <= 8 ? 3 : 2;
+  const doubled = Array.from({ length: repeatCount }, () => items).flat();
 
-  // Scroll by 1/repeatCount of total width so it loops one set of unique stores
+  // Scroll by 1/repeatCount of total width so it loops one set
   const scrollPercent = `${(-100 / repeatCount).toFixed(2)}%`;
-  const scrollDuration = `${unique.length * 4}s`;
+  const scrollDuration = `${items.length * 4}s`;
 
   return (
     <div className="relative py-8 sm:py-12 bg-white overflow-hidden group/marquee">
@@ -635,18 +612,19 @@ function RetailerMarquee({ stores, hasRealStores }: { stores: StoreData[]; hasRe
         {doubled.map((s, i) => {
           const href = hasRealStores ? `/store/${s.vendorSlug}` : "/products";
           const colorClass = VENDOR_COLORS[s.vendorName] || "bg-slate-500";
+          const logoUrl = s.branchLogoUrl || s.vendorLogoUrl;
 
           return (
             <Link
-              key={`${s.vendorSlug}-${i}`}
+              key={`${s.branchSlug}-${i}`}
               href={href}
               className="flex-shrink-0 flex flex-col items-center gap-4 group transition-all duration-300 cursor-pointer"
             >
               <div className="w-20 h-20 sm:w-32 sm:h-32 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
-                {s.vendorLogoUrl ? (
+                {logoUrl ? (
                   <img
-                    src={s.vendorLogoUrl}
-                    alt={s.vendorName}
+                    src={logoUrl}
+                    alt={s.branchName}
                     className="max-h-full max-w-full object-contain transition-all duration-500"
                   />
                 ) : (
@@ -655,8 +633,8 @@ function RetailerMarquee({ stores, hasRealStores }: { stores: StoreData[]; hasRe
                   </div>
                 )}
               </div>
-              <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-[0.2em] group-hover:text-primary transition-colors">
-                {s.vendorName}
+              <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-[0.2em] group-hover:text-primary transition-colors whitespace-nowrap">
+                {s.branchName}
               </span>
             </Link>
           );

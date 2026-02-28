@@ -5,7 +5,7 @@ import { eq, and, asc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/standalone/[slug] — Public single standalone listing by slug with images
+// GET /api/standalone/[slug] — Public single listing with images
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ slug: string }> }
@@ -21,7 +21,6 @@ export async function GET(
         description: standaloneListings.description,
         categoryId: standaloneListings.categoryId,
         categoryName: categories.name,
-        categorySlug: categories.slug,
         price: standaloneListings.price,
         checkoutType: standaloneListings.checkoutType,
         whatsappNumber: standaloneListings.whatsappNumber,
@@ -32,12 +31,7 @@ export async function GET(
       })
       .from(standaloneListings)
       .leftJoin(categories, eq(standaloneListings.categoryId, categories.id))
-      .where(
-        and(
-          eq(standaloneListings.slug, slug),
-          eq(standaloneListings.active, true)
-        )
-      )
+      .where(and(eq(standaloneListings.slug, slug), eq(standaloneListings.active, true)))
       .limit(1);
 
     if (!listing) {

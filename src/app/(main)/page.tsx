@@ -32,6 +32,9 @@ export default async function HomePage() {
         branchSlug: branches.slug,
         branchTown: branches.town,
         branchRegion: branches.region,
+        branchCity: branches.city,
+        branchArea: branches.area,
+        branchLogoUrl: branches.logoUrl,
         productCount: sql<number>`count(${storeProducts.id})`.as("product_count"),
       })
       .from(branches)
@@ -46,7 +49,7 @@ export default async function HomePage() {
           eq(branches.showInMarquee, true)
         )
       )
-      .groupBy(branches.id, vendors.name, vendors.slug, vendors.logoUrl, vendors.description, branches.branchName, branches.slug, branches.town, branches.region)
+      .groupBy(branches.id, vendors.name, vendors.slug, vendors.logoUrl, vendors.description, branches.branchName, branches.slug, branches.town, branches.region, branches.city, branches.area, branches.logoUrl)
       .orderBy(asc(branches.marqueeOrder))
       .catch(() => []),
 
@@ -246,6 +249,9 @@ export default async function HomePage() {
         branchSlug: branches.slug,
         branchTown: branches.town,
         branchRegion: branches.region,
+        branchCity: branches.city,
+        branchArea: branches.area,
+        branchLogoUrl: branches.logoUrl,
         productCount: sql<number>`count(${storeProducts.id})`.as("product_count"),
       })
       .from(branches)
@@ -259,7 +265,7 @@ export default async function HomePage() {
           eq(branches.active, true)
         )
       )
-      .groupBy(branches.id, vendors.name, vendors.slug, vendors.logoUrl, vendors.description, branches.branchName, branches.slug, branches.town, branches.region)
+      .groupBy(branches.id, vendors.name, vendors.slug, vendors.logoUrl, vendors.description, branches.branchName, branches.slug, branches.town, branches.region, branches.city, branches.area, branches.logoUrl)
       .orderBy(asc(vendors.name))
       .catch(() => []);
   }

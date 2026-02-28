@@ -3,14 +3,11 @@ import { db } from "@/db";
 import { standaloneListings, standaloneListingImages } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { slugify } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-function slugify(str: string) {
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
-
-// PATCH /api/admin/standalone/[id] — Update standalone listing
+// PATCH /api/admin/standalone/[id]
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -24,7 +21,6 @@ export async function PATCH(
 
   let body: {
     title?: string;
-    slug?: string;
     description?: string;
     categoryId?: string | null;
     price?: string | number | null;
@@ -53,27 +49,12 @@ export async function PATCH(
     return NextResponse.json({ error: "Listing not found" }, { status: 404 });
   }
 
-  const updates: Partial<{
-    title: string;
-    slug: string;
-    description: string | null;
-    categoryId: string | null;
-    price: string | null;
-    checkoutType: "whatsapp" | "external_url";
-    whatsappNumber: string | null;
-    externalUrl: string | null;
-    featured: boolean;
-    active: boolean;
-  }> = {};
+  const updates: Record<string, unknown> = {};
 
   if (body.title !== undefined) {
     updates.title = body.title.trim();
-    // Auto-update slug if title changes and no explicit slug given
-    if (!body.slug) {
-      updates.slug = slugify(body.title.trim());
-    }
+    updates.slug = slugify(body.title.trim());
   }
-  if (body.slug !== undefined) updates.slug = body.slug.trim();
   if (body.description !== undefined) updates.description = body.description;
   if (body.categoryId !== undefined) updates.categoryId = body.categoryId;
   if (body.price !== undefined) updates.price = body.price != null ? String(body.price) : null;
@@ -95,15 +76,10 @@ export async function PATCH(
       updated = result;
     }
 
-    // Handle image replacement if provided
     if (Array.isArray(body.images)) {
       if (body.replaceImages !== false) {
-        // Default: replace all images
-        await db
-          .delete(standaloneListingImages)
-          .where(eq(standaloneListingImages.listingId, id));
+        await db.delete(standaloneListingImages).where(eq(standaloneListingImages.listingId, id));
       }
-
       if (body.images.length > 0) {
         const imageValues = body.images.map((img, index) => ({
           listingId: id,
@@ -117,20 +93,14 @@ export async function PATCH(
     return NextResponse.json(updated);
   } catch (error: unknown) {
     console.error("Admin standalone PATCH error:", error);
-    if (
-      error instanceof Error &&
-      error.message.includes("duplicate key")
-    ) {
-      return NextResponse.json(
-        { error: "A listing with this slug already exists" },
-        { status: 409 }
-      );
+    if (error instanceof Error && error.message.includes("duplicate key")) {
+      return NextResponse.json({ error: "A listing with this slug already exists" }, { status: 409 });
     }
     return NextResponse.json({ error: "Failed to update listing" }, { status: 500 });
   }
 }
 
-// DELETE /api/admin/standalone/[id] — Delete standalone listing (images cascade via FK)
+// DELETE /api/admin/standalone/[id]
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }

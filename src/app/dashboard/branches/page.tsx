@@ -35,16 +35,20 @@ import {
   Loader2,
 } from "lucide-react";
 import { useBranch } from "@/hooks/use-branch";
-import { NAMIBIA_REGIONS } from "@/hooks/use-location";
+import { NAMIBIA_REGIONS, NAMIBIA_AREAS } from "@/hooks/use-location";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 interface Branch {
   id: string;
   branchName: string;
   slug: string;
+  city: string | null;
+  area: string | null;
   town: string | null;
   region: string | null;
   address: string | null;
   whatsappNumber: string | null;
+  logoUrl: string | null;
   approved: boolean;
   active: boolean;
   showInMarquee: boolean;
@@ -53,10 +57,11 @@ interface Branch {
 
 const emptyForm = {
   branchName: "",
-  region: "",
-  town: "",
+  city: "",
+  area: "",
   address: "",
   whatsappNumber: "",
+  logoUrl: "",
 };
 
 export default function VendorBranchesPage() {
@@ -69,8 +74,8 @@ export default function VendorBranchesPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
 
-  const regions = Object.keys(NAMIBIA_REGIONS);
-  const towns = form.region ? NAMIBIA_REGIONS[form.region] || [] : [];
+  const allCities = Object.values(NAMIBIA_REGIONS).flat();
+  const areas = form.city ? NAMIBIA_AREAS[form.city] || [] : [];
 
   const fetchBranches = useCallback(async () => {
     try {
@@ -99,10 +104,11 @@ export default function VendorBranchesPage() {
     setEditingId(branch.id);
     setForm({
       branchName: branch.branchName || "",
-      region: branch.region || "",
-      town: branch.town || "",
+      city: branch.city || branch.town || "",
+      area: branch.area || "",
       address: branch.address || "",
       whatsappNumber: branch.whatsappNumber || "",
+      logoUrl: branch.logoUrl || "",
     });
     setDialogOpen(true);
   };
@@ -125,10 +131,11 @@ export default function VendorBranchesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           branchName: form.branchName.trim(),
-          region: form.region || null,
-          town: form.town || null,
+          city: form.city || null,
+          area: form.area || null,
           address: form.address.trim() || null,
           whatsappNumber: form.whatsappNumber.trim() || null,
+          logoUrl: form.logoUrl || null,
         }),
       });
 
@@ -213,45 +220,54 @@ export default function VendorBranchesPage() {
                 />
               </div>
 
-              {/* Region */}
+              {/* City */}
               <div className="space-y-2">
-                <Label htmlFor="region">Region</Label>
+                <Label htmlFor="city">City</Label>
                 <Select
-                  value={form.region}
-                  onValueChange={(val) => setForm({ ...form, region: val, town: "" })}
+                  value={form.city}
+                  onValueChange={(val) => setForm({ ...form, city: val, area: "" })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select region" />
+                    <SelectValue placeholder="Select city" />
                   </SelectTrigger>
                   <SelectContent>
-                    {regions.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r}
+                    {allCities.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Town */}
+              {/* Area / Suburb */}
               <div className="space-y-2">
-                <Label htmlFor="town">Town</Label>
-                <Select
-                  value={form.town}
-                  onValueChange={(val) => setForm({ ...form, town: val })}
-                  disabled={!form.region}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={form.region ? "Select town" : "Select region first"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {towns.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {t}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="area">Area / Suburb</Label>
+                {areas.length > 0 ? (
+                  <Select
+                    value={form.area}
+                    onValueChange={(val) => setForm({ ...form, area: val })}
+                    disabled={!form.city}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={form.city ? "Select area/suburb" : "Select city first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {areas.map((a) => (
+                        <SelectItem key={a} value={a}>
+                          {a}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="area"
+                    placeholder="e.g. Otjomuise, Katutura, Central"
+                    value={form.area}
+                    onChange={(e) => setForm({ ...form, area: e.target.value })}
+                  />
+                )}
               </div>
 
               {/* Address */}
@@ -273,6 +289,20 @@ export default function VendorBranchesPage() {
                   placeholder="e.g. +264811234567"
                   value={form.whatsappNumber}
                   onChange={(e) => setForm({ ...form, whatsappNumber: e.target.value })}
+                />
+              </div>
+
+              {/* Branch Logo */}
+              <div className="space-y-2">
+                <Label>Branch Logo</Label>
+                <p className="text-[10px] text-slate-400">Optional — overrides vendor logo for this branch</p>
+                <ImageUpload
+                  value={form.logoUrl || undefined}
+                  onChange={(url) => setForm({ ...form, logoUrl: url })}
+                  onRemove={() => setForm({ ...form, logoUrl: "" })}
+                  folder="branch-logos"
+                  aspectRatio="square"
+                  label="Branch Logo"
                 />
               </div>
 
@@ -360,10 +390,10 @@ export default function VendorBranchesPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
-                      {(branch.town || branch.region) && (
+                      {(branch.city || branch.area || branch.town) && (
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3.5 w-3.5" />
-                          {[branch.town, branch.region].filter(Boolean).join(", ")}
+                          {[branch.city || branch.town, branch.area].filter(Boolean).join(", ")}
                         </span>
                       )}
                       {branch.whatsappNumber && (

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -32,7 +33,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, ShoppingBag, MessageCircle, ExternalLink, Tag } from "lucide-react";
+import { Plus, Edit2, Trash2, ShoppingBag, MessageCircle, ExternalLink, Tag, X } from "lucide-react";
+// ImageUpload replaced with inline upload to avoid rendering issues
+
+interface ListingImage {
+  id?: string;
+  imageUrl: string;
+  sortOrder: number;
+}
 
 interface Listing {
   id: string;
@@ -48,6 +56,7 @@ interface Listing {
   featured: boolean;
   active: boolean;
   createdAt: string;
+  images: ListingImage[];
 }
 
 interface Category {
@@ -78,6 +87,7 @@ export default function AdminStandaloneListingsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [images, setImages] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<Listing | null>(null);
@@ -108,6 +118,7 @@ export default function AdminStandaloneListingsPage() {
   function openCreateDialog() {
     setEditingListing(null);
     setForm(EMPTY_FORM);
+    setImages([]);
     setDialogOpen(true);
   }
 
@@ -124,11 +135,20 @@ export default function AdminStandaloneListingsPage() {
       featured: listing.featured,
       active: listing.active,
     });
+    setImages(listing.images?.map((img) => img.imageUrl) || []);
     setDialogOpen(true);
   }
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handleImageUploaded(url: string) {
+    setImages((prev) => [...prev, url]);
+  }
+
+  function removeImage(index: number) {
+    setImages((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -144,6 +164,8 @@ export default function AdminStandaloneListingsPage() {
       externalUrl: form.checkoutType === "external_url" ? form.externalUrl.trim() || null : null,
       featured: form.featured,
       active: form.active,
+      images: images.map((url, i) => ({ imageUrl: url, sortOrder: i })),
+      replaceImages: true,
     };
     setSubmitting(true);
     try {
@@ -226,36 +248,43 @@ export default function AdminStandaloneListingsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {listings.map((listing) => (
-            <div key={listing.id} className={`bg-white border border-slate-100 rounded-2xl overflow-hidden flex flex-col transition-opacity ${!listing.active ? "opacity-60" : ""}`}>
-              <div className="h-36 bg-slate-100 flex items-center justify-center">
-                <ShoppingBag className="h-10 w-10 text-slate-300" />
-              </div>
-              <div className="p-4 flex flex-col gap-2 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-900 leading-snug line-clamp-2 flex-1">{listing.title}</p>
-                  {listing.featured && <Badge className="bg-amber-100 text-amber-700 border-0 text-[10px] shrink-0">Featured</Badge>}
+          {listings.map((listing) => {
+            const firstImage = listing.images?.[0]?.imageUrl;
+            return (
+              <div key={listing.id} className={`bg-white border border-slate-100 rounded-2xl overflow-hidden flex flex-col transition-opacity ${!listing.active ? "opacity-60" : ""}`}>
+                <div className="h-36 bg-slate-100 flex items-center justify-center overflow-hidden">
+                  {firstImage ? (
+                    <img src={firstImage} alt={listing.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <ShoppingBag className="h-10 w-10 text-slate-300" />
+                  )}
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {listing.categoryName && <Badge variant="secondary" className="gap-1 bg-slate-100 text-slate-600 border-0 text-[11px]"><Tag className="h-2.5 w-2.5" />{listing.categoryName}</Badge>}
-                  {listing.checkoutType === "whatsapp"
-                    ? <Badge className="gap-1 bg-green-100 text-green-700 border-0 text-[11px]"><MessageCircle className="h-2.5 w-2.5" />WhatsApp</Badge>
-                    : <Badge className="gap-1 bg-blue-100 text-blue-700 border-0 text-[11px]"><ExternalLink className="h-2.5 w-2.5" />Website</Badge>}
-                </div>
-                {listing.price != null && <p className="text-base font-bold text-slate-900">N$ {Number(listing.price).toFixed(2)}</p>}
-                <div className="mt-auto pt-2 flex items-center justify-between border-t border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <Switch checked={listing.active} disabled={actionLoading === listing.id} onCheckedChange={() => handleToggleActive(listing)} />
-                    <span className="text-xs text-slate-500">{listing.active ? "Active" : "Inactive"}</span>
+                <div className="p-4 flex flex-col gap-2 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold text-slate-900 leading-snug line-clamp-2 flex-1">{listing.title}</p>
+                    {listing.featured && <Badge className="bg-amber-100 text-amber-700 border-0 text-[10px] shrink-0">Featured</Badge>}
                   </div>
-                  <div className="flex gap-1">
-                    <Button size="icon" variant="outline" className="h-8 w-8 text-slate-500 hover:bg-slate-50 border-slate-200" onClick={() => openEditDialog(listing)} title="Edit"><Edit2 className="h-3.5 w-3.5" /></Button>
-                    <Button size="icon" variant="outline" className="h-8 w-8 text-red-500 hover:bg-red-50 border-red-200" disabled={actionLoading === listing.id} onClick={() => setDeleteTarget(listing)} title="Delete"><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <div className="flex flex-wrap gap-1.5">
+                    {listing.categoryName && <Badge variant="secondary" className="gap-1 bg-slate-100 text-slate-600 border-0 text-[11px]"><Tag className="h-2.5 w-2.5" />{listing.categoryName}</Badge>}
+                    {listing.checkoutType === "whatsapp"
+                      ? <Badge className="gap-1 bg-green-100 text-green-700 border-0 text-[11px]"><MessageCircle className="h-2.5 w-2.5" />WhatsApp</Badge>
+                      : <Badge className="gap-1 bg-blue-100 text-blue-700 border-0 text-[11px]"><ExternalLink className="h-2.5 w-2.5" />Website</Badge>}
+                  </div>
+                  {listing.price != null && <p className="text-base font-bold text-slate-900">N$ {Number(listing.price).toFixed(2)}</p>}
+                  <div className="mt-auto pt-2 flex items-center justify-between border-t border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <Switch checked={listing.active} disabled={actionLoading === listing.id} onCheckedChange={() => handleToggleActive(listing)} />
+                      <span className="text-xs text-slate-500">{listing.active ? "Active" : "Inactive"}</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button size="icon" variant="outline" className="h-8 w-8 text-slate-500 hover:bg-slate-50 border-slate-200" onClick={() => openEditDialog(listing)} title="Edit"><Edit2 className="h-3.5 w-3.5" /></Button>
+                      <Button size="icon" variant="outline" className="h-8 w-8 text-red-500 hover:bg-red-50 border-red-200" disabled={actionLoading === listing.id} onClick={() => setDeleteTarget(listing)} title="Delete"><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -270,6 +299,61 @@ export default function AdminStandaloneListingsPage() {
               <Label htmlFor="title">Title <span className="text-red-500">*</span></Label>
               <Input id="title" placeholder="e.g. 2021 Toyota Land Cruiser" value={form.title} onChange={(e) => setField("title", e.target.value)} required />
             </div>
+
+            {/* Images */}
+            <div className="space-y-2">
+              <Label>Listing Images</Label>
+              {images.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {images.map((url, i) => (
+                    <div key={i} className="relative group">
+                      <img src={url} alt="" className="h-20 w-20 rounded-xl object-cover border border-slate-200" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-slate-300 transition-colors">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  id="listing-image-input"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
+                    try {
+                      const formData = new FormData();
+                      formData.append("file", file);
+                      formData.append("folder", "listings");
+                      const res = await fetch("/api/upload/image", { method: "POST", body: formData });
+                      if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Upload failed"); }
+                      const { publicUrl } = await res.json();
+                      handleImageUploaded(publicUrl);
+                      toast.success("Image uploaded");
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Upload failed");
+                    }
+                    e.target.value = "";
+                  }}
+                />
+                <label htmlFor="listing-image-input" className="cursor-pointer flex flex-col items-center gap-2">
+                  <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <Plus className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <p className="text-xs font-semibold text-slate-600">Add Image</p>
+                  <p className="text-[10px] text-slate-400">JPEG, PNG, WebP, GIF up to 5MB</p>
+                </label>
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <Label htmlFor="description">Description</Label>
               <Textarea id="description" placeholder="Describe this listing..." rows={3} value={form.description} onChange={(e) => setField("description", e.target.value)} className="resize-none" />

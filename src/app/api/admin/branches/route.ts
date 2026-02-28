@@ -30,6 +30,8 @@ export async function GET(req: NextRequest) {
         vendorId: branches.vendorId,
         branchName: branches.branchName,
         slug: branches.slug,
+        city: branches.city,
+        area: branches.area,
         town: branches.town,
         region: branches.region,
         address: branches.address,

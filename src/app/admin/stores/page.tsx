@@ -56,6 +56,8 @@ interface VendorItem {
 interface BranchItem {
   id: string;
   branchName: string;
+  city: string | null;
+  area: string | null;
   town: string | null;
   region: string | null;
   approved: boolean;
@@ -406,8 +408,8 @@ function AdminVendorsContent() {
                                       <TableCell>
                                         <div className="flex items-center gap-1 text-sm text-slate-600">
                                           <MapPin className="h-3 w-3 text-slate-400" />
-                                          {branch.town || branch.region
-                                            ? [branch.town, branch.region].filter(Boolean).join(", ")
+                                          {branch.city || branch.area || branch.town || branch.region
+                                            ? [branch.city || branch.town, branch.area || branch.region].filter(Boolean).join(", ")
                                             : "-"}
                                         </div>
                                       </TableCell>

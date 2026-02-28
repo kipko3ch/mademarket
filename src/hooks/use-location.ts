@@ -21,8 +21,45 @@ export const NAMIBIA_REGIONS: Record<string, string[]> = {
   "Kavango West": ["Nkurenkuru"],
 };
 
+/** City -> Areas/Suburbs mapping for Namibia */
+export const NAMIBIA_AREAS: Record<string, string[]> = {
+  Windhoek: [
+    "CBD", "Otjomuise", "Katutura", "Khomasdal", "Eros", "Klein Windhoek",
+    "Olympia", "Ludwigsdorf", "Pionierspark", "Hochland Park", "Cimbebasia",
+    "Academia", "Dorado Park", "Rocky Crest", "Prosperita", "Windhoek West",
+    "Windhoek North", "Avis", "Auasblick", "Suiderhof", "Wanaheda", "Soweto",
+    "Havana", "Greenwell Matongo", "Lafrenz", "Northern Industrial",
+    "Southern Industrial", "Brakwater", "Kleine Kuppe",
+  ],
+  Swakopmund: [
+    "Central", "Vineta", "Mondesa", "Ocean View", "Vogelstrand",
+    "DRC", "Tamariskia", "Kramersdorf", "Mile 4", "Rossmund", "Ext 15",
+  ],
+  "Walvis Bay": [
+    "Central", "Meersig", "Lagoon", "Kuisebmond", "Narraville",
+    "Langstrand", "Dunes", "Town Centre",
+  ],
+  Oshakati: ["Central", "Evululuko", "Oshoopala", "Sky", "Uupindi"],
+  Ondangwa: ["Central", "Oluno", "Oshikango Road"],
+  Rundu: ["Central", "Kehemu", "Safari", "Sauyemwa", "Donkerhoek"],
+  "Katima Mulilo": ["Central", "Cowboy", "Choto", "Greenwell Matongo"],
+  Otjiwarongo: ["Central", "Orwetoveni", "Industrial"],
+  Okahandja: ["Central", "Nau Aib", "Veddersdal"],
+  Mariental: ["Central", "Aimablaagte"],
+  Rehoboth: ["Central", "Block E", "Block F"],
+  Keetmanshoop: ["Central", "Westdene", "Tseiblaagte"],
+  "Lüderitz": ["Central", "Nautilus"],
+  Tsumeb: ["Central", "Nomtsoub"],
+  Gobabis: ["Central", "Epako"],
+};
+
 /** Flat list of all Namibian cities (backwards compat) */
 export const NAMIBIA_CITIES = Object.values(NAMIBIA_REGIONS).flat();
+
+/** Get areas/suburbs for a given city */
+export function getAreasForCity(city: string): string[] {
+  return NAMIBIA_AREAS[city] || [];
+}
 
 /** Look up which region a city belongs to */
 export function getRegionForCity(city: string): string | null {
@@ -93,10 +130,15 @@ export const useLocation = create<LocationStore>()(
               data.address?.village ||
               "Unknown";
 
+            const area =
+              data.address?.suburb ||
+              data.address?.neighbourhood ||
+              undefined;
+
             const region = getRegionForCity(city) || undefined;
 
             set({
-              location: { city, region, lat: latitude, lng: longitude },
+              location: { city, region, area, lat: latitude, lng: longitude },
               loading: false,
             });
           } else {

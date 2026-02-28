@@ -30,12 +30,15 @@ export async function GET() {
         id: branches.id,
         branchName: branches.branchName,
         slug: branches.slug,
+        city: branches.city,
+        area: branches.area,
         town: branches.town,
         region: branches.region,
         address: branches.address,
         latitude: branches.latitude,
         longitude: branches.longitude,
         whatsappNumber: branches.whatsappNumber,
+        logoUrl: branches.logoUrl,
         approved: branches.approved,
         active: branches.active,
         showInMarquee: branches.showInMarquee,
@@ -92,8 +95,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate slug from branch name
-    const baseSlug = slugify(body.branchName);
+    // Generate slug: prefer area-based slug for location identity
+    const slugSource = body.area || body.branchName;
+    const baseSlug = slugify(slugSource);
     let slug = baseSlug;
 
     // Check if slug already exists for this vendor
@@ -108,18 +112,25 @@ export async function POST(req: NextRequest) {
       slug = `${baseSlug}-${suffix}`;
     }
 
+    // Map city/area to legacy town/region for backwards compat
+    const city = body.city || body.town || null;
+    const area = body.area || null;
+
     const [created] = await db
       .insert(branches)
       .values({
         vendorId: vendor.id,
         branchName: body.branchName.trim(),
         slug,
-        town: body.town || null,
+        city,
+        area,
+        town: city,              // legacy fallback
         region: body.region || null,
         address: body.address || null,
         latitude: body.lat || body.latitude || null,
         longitude: body.lng || body.longitude || null,
         whatsappNumber: body.whatsappNumber || null,
+        logoUrl: body.logoUrl || null,
       })
       .returning();
 

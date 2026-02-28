@@ -3,12 +3,9 @@ import { db } from "@/db";
 import { standaloneListings, standaloneListingImages, categories } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { slugify } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-
-function slugify(str: string) {
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
 
 // GET /api/admin/standalone — All standalone listings (admin)
 export async function GET() {
@@ -38,7 +35,33 @@ export async function GET() {
       .leftJoin(categories, eq(standaloneListings.categoryId, categories.id))
       .orderBy(desc(standaloneListings.createdAt));
 
-    return NextResponse.json(listings);
+    // Fetch images for each listing
+    const listingIds = listings.map((l) => l.id);
+    const allImages = listingIds.length > 0
+      ? await db
+          .select({
+            id: standaloneListingImages.id,
+            listingId: standaloneListingImages.listingId,
+            imageUrl: standaloneListingImages.imageUrl,
+            sortOrder: standaloneListingImages.sortOrder,
+          })
+          .from(standaloneListingImages)
+          .orderBy(standaloneListingImages.sortOrder)
+      : [];
+
+    const imagesByListing = new Map<string, typeof allImages>();
+    for (const img of allImages) {
+      const arr = imagesByListing.get(img.listingId) || [];
+      arr.push(img);
+      imagesByListing.set(img.listingId, arr);
+    }
+
+    const result = listings.map((l) => ({
+      ...l,
+      images: imagesByListing.get(l.id) || [],
+    }));
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Admin standalone GET error:", error);
     return NextResponse.json({ error: "Failed to fetch listings" }, { status: 500 });
@@ -54,7 +77,6 @@ export async function POST(req: Request) {
 
   let body: {
     title?: string;
-    slug?: string;
     description?: string;
     categoryId?: string;
     price?: string | number;
@@ -77,28 +99,11 @@ export async function POST(req: Request) {
   }
 
   if (!body.checkoutType || !["whatsapp", "external_url"].includes(body.checkoutType)) {
-    return NextResponse.json(
-      { error: "checkoutType must be 'whatsapp' or 'external_url'" },
-      { status: 400 }
-    );
-  }
-
-  if (body.checkoutType === "whatsapp" && !body.whatsappNumber) {
-    return NextResponse.json(
-      { error: "whatsappNumber is required when checkoutType is 'whatsapp'" },
-      { status: 400 }
-    );
-  }
-
-  if (body.checkoutType === "external_url" && !body.externalUrl) {
-    return NextResponse.json(
-      { error: "externalUrl is required when checkoutType is 'external_url'" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "checkoutType must be 'whatsapp' or 'external_url'" }, { status: 400 });
   }
 
   const title = body.title.trim();
-  const slug = body.slug?.trim() || slugify(title);
+  const slug = slugify(title);
 
   try {
     const [created] = await db
@@ -117,7 +122,6 @@ export async function POST(req: Request) {
       })
       .returning();
 
-    // Insert images if provided
     if (Array.isArray(body.images) && body.images.length > 0) {
       const imageValues = body.images.map((img, index) => ({
         listingId: created.id,
@@ -130,14 +134,8 @@ export async function POST(req: Request) {
     return NextResponse.json(created, { status: 201 });
   } catch (error: unknown) {
     console.error("Admin standalone POST error:", error);
-    if (
-      error instanceof Error &&
-      error.message.includes("duplicate key")
-    ) {
-      return NextResponse.json(
-        { error: "A listing with this slug already exists" },
-        { status: 409 }
-      );
+    if (error instanceof Error && error.message.includes("duplicate key")) {
+      return NextResponse.json({ error: "A listing with this slug already exists" }, { status: 409 });
     }
     return NextResponse.json({ error: "Failed to create listing" }, { status: 500 });
   }

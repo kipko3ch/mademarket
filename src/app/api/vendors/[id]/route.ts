@@ -70,7 +70,14 @@ export async function GET(
           .innerJoin(products, eq(storeProducts.productId, products.id))
           .where(eq(storeProducts.branchId, branch.id));
 
-        return { ...branch, products: branchProducts };
+        return {
+          ...branch,
+          // Expose city/area with fallback to legacy town/region
+          city: branch.city || branch.town,
+          area: branch.area || null,
+          branchSlug: branch.slug,
+          products: branchProducts,
+        };
       })
     );
 
