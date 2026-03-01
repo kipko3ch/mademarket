@@ -213,25 +213,32 @@ export default async function HomePage() {
       )
       .catch(() => []),
 
-    // 7. Featured standalone listings
-    db
-      .select({
-        id: standaloneListings.id,
-        title: standaloneListings.title,
-        slug: standaloneListings.slug,
-        description: standaloneListings.description,
-        categoryName: categories.name,
-        price: standaloneListings.price,
-        checkoutType: standaloneListings.checkoutType,
-        whatsappNumber: standaloneListings.whatsappNumber,
-        externalUrl: standaloneListings.externalUrl,
-        featured: standaloneListings.featured,
+    // 7. Active standalone listings with images
+    db.query.standaloneListings
+      .findMany({
+        where: eq(standaloneListings.active, true),
+        with: {
+          category: true,
+          images: { limit: 1, orderBy: (img, { asc }) => [asc(img.sortOrder)] },
+        },
+        orderBy: [desc(standaloneListings.featured), desc(standaloneListings.createdAt)],
+        limit: 6,
       })
-      .from(standaloneListings)
-      .leftJoin(categories, eq(standaloneListings.categoryId, categories.id))
-      .where(and(eq(standaloneListings.active, true), eq(standaloneListings.featured, true)))
-      .orderBy(desc(standaloneListings.createdAt))
-      .limit(6)
+      .then((rows) =>
+        rows.map((l) => ({
+          id: l.id,
+          title: l.title,
+          slug: l.slug,
+          description: l.description,
+          categoryName: l.category?.name || null,
+          price: l.price,
+          checkoutType: l.checkoutType,
+          whatsappNumber: l.whatsappNumber,
+          externalUrl: l.externalUrl,
+          featured: l.featured,
+          imageUrl: l.images?.[0]?.imageUrl || null,
+        }))
+      )
       .catch(() => []),
   ]);
 

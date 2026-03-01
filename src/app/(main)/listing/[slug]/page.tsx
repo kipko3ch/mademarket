@@ -3,6 +3,7 @@
 
 import { useEffect, useState, use } from "react";
 import { ShoppingBag, Loader2, ArrowLeft, MessageCircle, ExternalLink, Tag } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -56,7 +57,7 @@ export default function ListingDetailPage({
       }
     }
     fetchData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   if (loading) {
@@ -110,9 +111,8 @@ export default function ListingDetailPage({
                 <button
                   key={img.id}
                   onClick={() => setActiveImage(img.imageUrl)}
-                  className={`shrink-0 w-16 h-16 rounded-xl border-2 overflow-hidden transition-all ${
-                    displayImage === img.imageUrl ? "border-primary" : "border-transparent hover:border-slate-300"
-                  }`}
+                  className={`shrink-0 w-16 h-16 rounded-xl border-2 overflow-hidden transition-all ${displayImage === img.imageUrl ? "border-primary" : "border-transparent hover:border-slate-300"
+                    }`}
                 >
                   <img src={img.imageUrl} alt="" className="w-full h-full object-cover" />
                 </button>
@@ -151,7 +151,7 @@ export default function ListingDetailPage({
                 rel="noopener noreferrer"
                 className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl transition-colors text-base shadow-sm"
               >
-                <MessageCircle className="h-5 w-5" />
+                <FaWhatsapp className="h-5 w-5" />
                 Contact via WhatsApp
               </a>
             ) : listing.checkoutType === "external_url" && listing.externalUrl ? (

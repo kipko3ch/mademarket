@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { ChevronRight, Store, ArrowRight, Diamond, TrendingUp, Package, Tag, MessageCircle, ExternalLink } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import { ProductCard } from "@/components/products/product-card";
 import { LocationModal } from "@/components/location-modal";
 import { BrochuresSection } from "@/components/brochures-section";
@@ -70,6 +71,7 @@ interface StandaloneListing {
   whatsappNumber: string | null;
   externalUrl: string | null;
   featured: boolean;
+  imageUrl: string | null;
 }
 
 interface HomeClientProps {
@@ -348,9 +350,15 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {standaloneListings.map((listing) => (
-                <Link key={listing.id} href={`/listing/${listing.slug}`} className="group bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-md transition-all">
-                  <div className="h-48 bg-slate-100 flex items-center justify-center p-12">
-                    <img src="/icons/productplaceholder.png" alt="" className="h-full w-full object-contain opacity-20" />
+                <Link key={listing.id} href={`/listing/${listing.slug}`} className="group bg-transparent overflow-hidden hover:shadow-md transition-all flex flex-col">
+                  <div className="h-48 bg-slate-100 rounded-2xl border border-slate-100 overflow-hidden">
+                    {listing.imageUrl ? (
+                      <img src={listing.imageUrl} alt={listing.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center p-12">
+                        <img src="/icons/productplaceholder.png" alt="" className="h-full w-full object-contain opacity-20" />
+                      </div>
+                    )}
                   </div>
                   <div className="p-4">
                     {listing.categoryName && (
@@ -367,8 +375,8 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
                     )}
                     <div className="mt-3">
                       {listing.checkoutType === "whatsapp" ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2.5 py-1 rounded-full font-semibold">
-                          <MessageCircle className="h-3 w-3" /> WhatsApp
+                        <span className="inline-flex items-center gap-1.5 text-xs text-green-700 bg-green-50 px-2.5 py-1.5 rounded-full font-bold">
+                          <FaWhatsapp className="h-3.5 w-3.5" /> WhatsApp
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-xs text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full font-semibold">

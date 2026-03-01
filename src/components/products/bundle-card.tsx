@@ -62,7 +62,7 @@ export function BundleCard({ bundle }: { bundle: BundleData }) {
             rel={isExternal ? "noopener noreferrer" : undefined}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className="relative w-full bg-white border border-slate-100 rounded-[2rem] overflow-hidden hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:border-primary/30 transition-all duration-500 group cursor-pointer flex flex-col h-full"
+            className="relative w-full bg-transparent overflow-hidden hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-500 group cursor-pointer flex flex-col h-full"
         >
             {/* Bundle Label/Badge */}
             <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
@@ -78,7 +78,7 @@ export function BundleCard({ bundle }: { bundle: BundleData }) {
             </div>
 
             {/* Main Visual Section */}
-            <div className="relative h-48 sm:h-56 bg-slate-50 overflow-hidden shrink-0">
+            <div className="relative h-48 sm:h-56 bg-slate-50 border border-slate-100 rounded-[2rem] overflow-hidden shrink-0">
                 {displayImage ? (
                     <div className="w-full h-full relative">
                         {/* Background Blur Effect for depth */}
