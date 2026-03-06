@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -22,6 +24,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Check,
@@ -38,7 +47,9 @@ import {
   ArrowUp,
   ArrowDown,
   GitBranch,
+  Plus,
 } from "lucide-react";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 /* ---------- Types ---------- */
 
@@ -81,6 +92,34 @@ function AdminVendorsContent() {
   const [expandedVendorId, setExpandedVendorId] = useState<string | null>(null);
   const [branchesMap, setBranchesMap] = useState<Record<string, BranchItem[]>>({});
   const [branchesLoading, setBranchesLoading] = useState<string | null>(null);
+
+  // Create vendor dialog
+  const [createVendorOpen, setCreateVendorOpen] = useState(false);
+  const [vendorForm, setVendorForm] = useState({
+    name: "",
+    description: "",
+    logoUrl: "",
+    websiteUrl: "",
+    branchName: "",
+    city: "",
+    area: "",
+    address: "",
+    whatsappNumber: "",
+  });
+  const [creatingVendor, setCreatingVendor] = useState(false);
+
+  // Create branch dialog
+  const [createBranchOpen, setCreateBranchOpen] = useState(false);
+  const [branchForVendor, setBranchForVendor] = useState<VendorItem | null>(null);
+  const [branchForm, setBranchForm] = useState({
+    branchName: "",
+    city: "",
+    area: "",
+    address: "",
+    whatsappNumber: "",
+    logoUrl: "",
+  });
+  const [creatingBranch, setCreatingBranch] = useState(false);
 
   /* ---- Fetch vendors ---- */
   const fetchVendors = useCallback(async () => {
@@ -195,6 +234,69 @@ function AdminVendorsContent() {
     }
   }
 
+  /* ---- Create vendor ---- */
+  async function handleCreateVendor(e: React.FormEvent) {
+    e.preventDefault();
+    if (!vendorForm.name.trim() || !vendorForm.branchName.trim()) return;
+    setCreatingVendor(true);
+    try {
+      const res = await fetch("/api/admin/vendors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(vendorForm),
+      });
+      if (res.ok) {
+        toast.success(`Vendor "${vendorForm.name}" created with branch`);
+        setCreateVendorOpen(false);
+        setVendorForm({ name: "", description: "", logoUrl: "", websiteUrl: "", branchName: "", city: "", area: "", address: "", whatsappNumber: "" });
+        fetchVendors();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to create vendor");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setCreatingVendor(false);
+    }
+  }
+
+  /* ---- Create branch ---- */
+  function openCreateBranch(vendor: VendorItem) {
+    setBranchForVendor(vendor);
+    setBranchForm({ branchName: "", city: "", area: "", address: "", whatsappNumber: "", logoUrl: "" });
+    setCreateBranchOpen(true);
+  }
+
+  async function handleCreateBranch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!branchForVendor || !branchForm.branchName.trim()) return;
+    setCreatingBranch(true);
+    try {
+      const res = await fetch(`/api/vendors/${branchForVendor.id}/branches`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(branchForm),
+      });
+      if (res.ok) {
+        toast.success(`Branch "${branchForm.branchName}" added to ${branchForVendor.name}`);
+        setCreateBranchOpen(false);
+        fetchVendors();
+        // Refresh branches if expanded
+        if (expandedVendorId === branchForVendor.id) {
+          fetchBranches(branchForVendor.id);
+        }
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to create branch");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setCreatingBranch(false);
+    }
+  }
+
   /* ---- Badges ---- */
   function getVendorStatusBadge(vendor: VendorItem) {
     if (!vendor.active) {
@@ -223,11 +325,17 @@ function AdminVendorsContent() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Manage Vendors</h1>
-        <p className="text-sm text-slate-500 mt-0.5">
-          Approve, deactivate, or remove vendors and manage their branches
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Manage Vendors</h1>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Approve, deactivate, or remove vendors and manage their branches
+          </p>
+        </div>
+        <Button onClick={() => setCreateVendorOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Vendor
+        </Button>
       </div>
 
       {/* Search bar */}
@@ -354,6 +462,18 @@ function AdminVendorsContent() {
                             title={vendor.active ? "Deactivate" : "Activate"}
                           >
                             {vendor.active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                          </Button>
+
+                          {/* Add Branch */}
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8 text-blue-600 hover:bg-blue-50 border-blue-200"
+                            disabled={actionLoading === vendor.id}
+                            onClick={() => openCreateBranch(vendor)}
+                            title="Add branch"
+                          >
+                            <Plus className="h-4 w-4" />
                           </Button>
 
                           {/* Delete */}
@@ -565,6 +685,176 @@ function AdminVendorsContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Vendor Dialog */}
+      <Dialog open={createVendorOpen} onOpenChange={setCreateVendorOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Vendor</DialogTitle>
+            <DialogDescription>
+              Create a vendor with its first branch. Both will be auto-approved and active.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateVendor} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Vendor Logo</Label>
+              <ImageUpload
+                value={vendorForm.logoUrl}
+                onChange={(url) => setVendorForm({ ...vendorForm, logoUrl: url })}
+                onRemove={() => setVendorForm({ ...vendorForm, logoUrl: "" })}
+                folder="vendors"
+                aspectRatio="square"
+                label="Vendor Logo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Vendor Name *</Label>
+              <Input
+                placeholder="e.g., Shoprite"
+                value={vendorForm.name}
+                onChange={(e) => setVendorForm({ ...vendorForm, name: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input
+                placeholder="Brief description..."
+                value={vendorForm.description}
+                onChange={(e) => setVendorForm({ ...vendorForm, description: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Website</Label>
+              <Input
+                placeholder="e.g., shoprite.com.na"
+                value={vendorForm.websiteUrl}
+                onChange={(e) => setVendorForm({ ...vendorForm, websiteUrl: e.target.value })}
+              />
+            </div>
+            <hr className="border-slate-100" />
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">First Branch</p>
+            <div className="space-y-2">
+              <Label>Branch Name *</Label>
+              <Input
+                placeholder="e.g., Windhoek Main"
+                value={vendorForm.branchName}
+                onChange={(e) => setVendorForm({ ...vendorForm, branchName: e.target.value })}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>City</Label>
+                <Input
+                  placeholder="e.g., Windhoek"
+                  value={vendorForm.city}
+                  onChange={(e) => setVendorForm({ ...vendorForm, city: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Area</Label>
+                <Input
+                  placeholder="e.g., Katutura"
+                  value={vendorForm.area}
+                  onChange={(e) => setVendorForm({ ...vendorForm, area: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Address</Label>
+              <Input
+                placeholder="Street address..."
+                value={vendorForm.address}
+                onChange={(e) => setVendorForm({ ...vendorForm, address: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>WhatsApp Number</Label>
+              <Input
+                placeholder="e.g., +264812345678"
+                value={vendorForm.whatsappNumber}
+                onChange={(e) => setVendorForm({ ...vendorForm, whatsappNumber: e.target.value })}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={creatingVendor}>
+              {creatingVendor ? "Creating..." : "Create Vendor & Branch"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Branch Dialog */}
+      <Dialog open={createBranchOpen} onOpenChange={setCreateBranchOpen}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Branch to {branchForVendor?.name}</DialogTitle>
+            <DialogDescription>
+              Add a new branch location for this vendor.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateBranch} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Branch Logo</Label>
+              <ImageUpload
+                value={branchForm.logoUrl}
+                onChange={(url) => setBranchForm({ ...branchForm, logoUrl: url })}
+                onRemove={() => setBranchForm({ ...branchForm, logoUrl: "" })}
+                folder="branches"
+                aspectRatio="square"
+                label="Branch Logo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Branch Name *</Label>
+              <Input
+                placeholder="e.g., Oshakati Branch"
+                value={branchForm.branchName}
+                onChange={(e) => setBranchForm({ ...branchForm, branchName: e.target.value })}
+                required
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>City</Label>
+                <Input
+                  placeholder="e.g., Oshakati"
+                  value={branchForm.city}
+                  onChange={(e) => setBranchForm({ ...branchForm, city: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Area</Label>
+                <Input
+                  placeholder="e.g., Main Road"
+                  value={branchForm.area}
+                  onChange={(e) => setBranchForm({ ...branchForm, area: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Address</Label>
+              <Input
+                placeholder="Street address..."
+                value={branchForm.address}
+                onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>WhatsApp Number</Label>
+              <Input
+                placeholder="e.g., +264812345678"
+                value={branchForm.whatsappNumber}
+                onChange={(e) => setBranchForm({ ...branchForm, whatsappNumber: e.target.value })}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={creatingBranch}>
+              {creatingBranch ? "Adding..." : "Add Branch"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
