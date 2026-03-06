@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Store,
+  Package,
   ImagePlay,
   Diamond,
   Tags,
@@ -24,6 +25,7 @@ const adminLinks = [
   { href: "/admin/banners", label: "Hero Banners", icon: ImagePlay },
   { href: "/admin/featured", label: "Featured", icon: Diamond },
   { href: "/admin/stores", label: "Manage Vendors", icon: Store },
+  { href: "/admin/products", label: "Vendor Products", icon: Package },
   { href: "/admin/categories", label: "Categories", icon: Tags },
   { href: "/admin/standalone", label: "Marketplace", icon: ShoppingBag },
   { href: "/admin/sponsored", label: "Sponsored", icon: Megaphone },
@@ -49,7 +51,7 @@ export function AdminSidebar() {
             Menu
           </p>
           <nav className="space-y-1.5">
-            {adminLinks.slice(0, 8).map((link) => {
+            {adminLinks.slice(0, 9).map((link) => {
               const Icon = link.icon;
               const isActive = link.href === "/admin"
                 ? pathname === "/admin"
@@ -80,7 +82,7 @@ export function AdminSidebar() {
             General
           </p>
           <nav className="space-y-1.5">
-            {adminLinks.slice(8).map((link) => {
+            {adminLinks.slice(9).map((link) => {
               const Icon = link.icon;
               const isActive = link.href === "/admin"
                 ? pathname === "/admin"

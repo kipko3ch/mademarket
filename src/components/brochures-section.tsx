@@ -38,8 +38,34 @@ export function BrochuresSection() {
     fetchBrochures();
   }, []);
 
-  // Don't render section if no brochures and not loading
-  if (!loading && brochures.length === 0) return null;
+  // Render an empty state if no brochures are available
+  if (!loading && brochures.length === 0) {
+    return (
+      <section className="mb-8 sm:mb-12">
+        <div className="flex items-center justify-between mb-5 sm:mb-8">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icons/brochure.png" alt="Brochures" className="h-full w-full object-contain" />
+            </div>
+            <div>
+              <h2 className="font-heading text-xl sm:text-2xl md:text-3xl text-slate-900">
+                <span className="highlighter text-red-600">Store</span> Brochures
+              </h2>
+              <p className="text-slate-500 mt-0.5 sm:mt-1 text-xs sm:text-sm">
+                Browse the latest weekly catalogue leaflets directly.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-slate-50 border border-slate-100 rounded-2xl flex flex-col items-center justify-center py-10 px-4 text-center">
+          <FileText className="h-10 w-10 text-slate-300 mb-3" />
+          <p className="font-semibold text-slate-600 text-sm">No Store Brochures yet</p>
+          <p className="text-xs text-slate-500 mt-1">Check back later for new weekly catalogues.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mb-8 sm:mb-12">

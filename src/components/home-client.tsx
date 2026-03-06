@@ -335,7 +335,12 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
         )}
 
         {/* ═══════════════════════════════════════════════════════════
-            § 4.8  MARKETPLACE — Standalone listings
+            § 5  BROCHURES
+        ═══════════════════════════════════════════════════════════ */}
+        <BrochuresSection />
+
+        {/* ═══════════════════════════════════════════════════════════
+            § 5.5  MARKETPLACE — Standalone listings
         ═══════════════════════════════════════════════════════════ */}
         {standaloneListings.length > 0 && (
           <section className="mb-8 sm:mb-12">
@@ -390,11 +395,6 @@ export function HomeClient({ banners, stores, products, featuredProducts = [], p
             </div>
           </section>
         )}
-
-        {/* ═══════════════════════════════════════════════════════════
-            § 5  BROCHURES
-        ═══════════════════════════════════════════════════════════ */}
-        <BrochuresSection />
 
         {/* ═══════════════════════════════════════════════════════════
             § 6  CTA SECTION — Two-card grid
