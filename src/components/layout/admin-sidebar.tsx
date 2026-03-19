@@ -40,7 +40,7 @@ export function AdminSidebar() {
 
   return (
     <aside className="hidden lg:flex w-[260px] xl:w-[280px] flex-col bg-white text-slate-800 h-full border-r border-slate-100 p-6 relative">
-      <Link href="/admin" className="flex items-center gap-3 mb-10 group mt-2 px-1">
+      <Link href="/admin" className="flex items-center gap-3 mb-6 group mt-2 px-1">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="MaDe Market" className="h-8 w-auto px-1" />
       </Link>

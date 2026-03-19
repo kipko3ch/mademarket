@@ -17,11 +17,15 @@ import { cn } from "@/lib/utils";
 
 const adminLinks = [
   { href: "/admin", label: "Overview" },
-  { href: "/admin/stores", label: "Stores" },
+  { href: "/admin/banners", label: "Hero Banners" },
   { href: "/admin/featured", label: "Featured" },
-  { href: "/admin/banners", label: "Banners" },
+  { href: "/admin/stores", label: "Manage Vendors" },
+  { href: "/admin/products", label: "Vendor Products" },
   { href: "/admin/categories", label: "Categories" },
+  { href: "/admin/standalone", label: "Marketplace" },
   { href: "/admin/sponsored", label: "Sponsored" },
+  { href: "/admin/analytics", label: "Analytics" },
+  { href: "/admin/reports", label: "Reports" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/settings", label: "Settings" },
 ];
@@ -44,7 +48,7 @@ export function AdminHeader() {
               <Menu className="h-5 w-5" />
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[280px] p-0 bg-white border-slate-100 text-slate-800" showCloseButton={false}>
+          <SheetContent side="left" className="w-[280px] p-0 bg-white border-slate-100 text-slate-800 flex flex-col" showCloseButton={false}>
             <SheetHeader className="p-4 border-b border-slate-100 flex flex-row items-center justify-between space-y-0">
               <div className="flex items-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -57,7 +61,7 @@ export function AdminHeader() {
                 </button>
               </SheetClose>
             </SheetHeader>
-            <nav className="p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-140px)]">
+            <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-3 py-2">Menu</p>
               {adminLinks.map((link) => {
                 const isActive = link.href === "/admin"

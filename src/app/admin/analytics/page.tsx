@@ -206,7 +206,7 @@ export default function AdminAnalyticsPage() {
         <CardHeader>
           <CardTitle className="text-base">Vendor Performance</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           {data?.vendorStats && data.vendorStats.length > 0 ? (
             <Table>
               <TableHeader>
@@ -252,7 +252,7 @@ export default function AdminAnalyticsPage() {
               Branch Breakdown — {data.vendorStats.find((v) => v.vendorId === selectedVendorId)?.vendorName}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
